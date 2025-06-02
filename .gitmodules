@@ -1,0 +1,8 @@
+[submodule "bwv1006"]
+	path = bwv1006
+	url = https://github.com/cthiebaud/bwv1006.git
+	branch = main
+[submodule "bwv543"]
+	path = bwv543
+	url = https://github.com/cthiebaud/bwv543.git
+	branch = main
