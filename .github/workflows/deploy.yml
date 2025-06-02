@@ -62,7 +62,7 @@ jobs:
       run: |
         mkdir deploy
         cp index.html deploy/
-        cp bars.js deploy/
+        cp *.js deploy/
         cp -r media deploy/
         for sub in bwv1006 bwv543; do
           cp -r $sub deploy/
