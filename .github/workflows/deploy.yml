@@ -1,9 +1,10 @@
+# .github/workflows/deploy.yml
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # Allow manual trigger
 
 permissions:
   contents: read
@@ -22,68 +23,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout main repo
+    - name: Checkout
       uses: actions/checkout@v4
+      with:
+        submodules: false  # We'll do it manually
 
-    - name: Init sparse submodules manually
-      shell: bash
+    - name: Confirm submodule directories before manual clone
       run: |
-        git submodule init
+        echo "🔍 Checking submodule directories before sparse clone:"
+        ls -la
+        ls -la bwv1006 || echo "bwv1006 not yet populated"
+        ls -la bwv543 || echo "bwv543 not yet populated"
 
+    - name: Sparse clone submodules manually
+      run: |
         for sub in bwv1006 bwv543; do
-          url=$(git config --file .gitmodules --get submodule.${sub}.url)
-
-          echo "🔧 Cloning $sub without checkout..."
-          rm -rf "$sub"
-          git clone --no-checkout "$url" "$sub"
-
-          cd "$sub"
-
-          echo "🪄 Enabling sparse-checkout for $sub..."
+          echo "⬇️ Cloning $sub with sparse checkout"
+          git clone --filter=blob:none --sparse https://github.com/musicollator/$sub.git $sub
+          cd $sub
           git sparse-checkout init --cone
           git sparse-checkout set exports/
-
-          echo "🚧 Applying sparse-checkout via read-tree"
           git read-tree -mu HEAD
-
           cd ..
         done
 
-    - name: Verify sparse submodule contents
-      shell: bash
+    - name: List contents of submodules
       run: |
         for sub in bwv1006 bwv543; do
           echo "🧾 Files in $sub after sparse checkout:"
-          ls -la "$sub"
+          ls -la $sub
           echo ""
           echo "📂 Contents of $sub exports directory:"
-          ls -la "$sub/exports" || echo "No exports directory found"
+          ls -la $sub/exports || echo "No exports directory found"
           echo ""
         done
 
     - name: Create deployment directory
       run: |
         mkdir deploy
-
-        # Copy root files
         cp index.html deploy/
-
-        # Copy media directory
         cp -r media deploy/
-
-        # Copy submodules (only exports folder should exist)
-        cp -r bwv1006 deploy/
-        cp -r bwv543 deploy/
-
-        # Show deployment contents and size
-        echo "📦 Deployment contents:"
-        find deploy/ -type f -exec ls -lah {} \;
-        echo ""
-        echo "📁 Directory structure:"
-        tree deploy/ || find deploy/ -type d
-        echo ""
-        echo "📏 Total deployment size:"
-        du -sh deploy/
+        for sub in bwv1006 bwv543; do
+          cp -r $sub deploy/
+        done
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
