@@ -2,7 +2,7 @@
 <html lang="en">
 
 <!-- BWV Universal Player -->
- 
+
 
 <head>
   <meta charset="UTF-8" />
@@ -139,9 +139,19 @@
     }
 
     #measure-controls select {
-      border: 1px solid #ced4da;
-      border-radius: 3px;
-      padding: 2px 6px;
+      width: auto;
+      min-width: 120px;
+      display: inline-block;
+      margin-left: 8px;
+    }
+
+    /* Hide dropdown arrow when disabled (single option) */
+    #measure-controls select:disabled {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: none;
+      cursor: default;
     }
   </style>
 </head>
@@ -186,14 +196,16 @@
 
   <!-- Main content area for musical notation -->
   <div class="container">
-    <!-- Measure highlighting controls -->
+
+    <!-- Updated measure controls with fixed dropdown styling -->
     <div id="measure-controls" style="display: none;">
       <label for="highlight-select">Measure Highlighting:</label>
-      <select id="highlight-select">
+      <select id="highlight-select" class="form-select form-select-sm">
         <option value="">None</option>
       </select>
+      <small id="highlight-info" class="text-muted ms-2" style="display: none;"></small>
     </div>
-    
+
     <div id="svg-container"></div>
 
     <!-- Scroll-to-top button - auto-hides when not needed -->

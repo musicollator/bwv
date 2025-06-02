@@ -44,7 +44,7 @@ function processWerkParameter() {
 }
 
 // =============================================================================
-// MEASURE HIGHLIGHTING SYSTEM
+// MEASURE HIGHLIGHTING SYSTEM - Updated for YAML Configuration
 // =============================================================================
 
 class MeasureHighlighter {
@@ -87,16 +87,16 @@ class MeasureHighlighter {
       const colorIndex = (barNumber - 1) % structure.colors.length;
       return {
         fill: structure.colors[colorIndex],
-        // fillOpacity: structure.opacity || '0.3'
+        fillOpacity: structure.opacity || '0.3'
       };
     }
     
     if (structure.type === 'conditional') {
-      const colorIndex = structure.condition(barNumber);
+      const colorIndex = this.evaluateCondition(barNumber, structure.condition);
       if (colorIndex >= 0 && colorIndex < structure.colors.length) {
         return {
           fill: structure.colors[colorIndex],
-          // fillOpacity: structure.opacity || '0.3'
+          fillOpacity: structure.opacity || '0.3'
         };
       }
     }
@@ -106,13 +106,34 @@ class MeasureHighlighter {
         if (barNumber >= range.start && barNumber <= range.end) {
           return {
             fill: range.color,
-            // fillOpacity: structure.opacity || '0.3'
+            fillOpacity: structure.opacity || '0.3'
           };
         }
       }
     }
     
     return null;
+  }
+
+  // Evaluate conditional logic from YAML configuration
+  evaluateCondition(barNumber, condition) {
+    switch (condition.type) {
+      case 'line-starts':
+        // Bars in the list get index 0, others get index 1
+        return condition.bars.includes(barNumber) ? 0 : 1;
+      
+      case 'modulo':
+        // Every nth bar gets index 0, others get index 1
+        return (barNumber % condition.divisor === condition.remainder) ? 0 : 1;
+      
+      case 'specific-bars':
+        // Specific bars get index 1, others get default_index (usually 0)
+        return condition.bars.includes(barNumber) ? 1 : (condition.default_index || 0);
+      
+      default:
+        console.warn(`Unknown condition type: ${condition.type}`);
+        return 0;
+    }
   }
 
   // Clear all highlights
@@ -128,6 +149,12 @@ class MeasureHighlighter {
   getStructureNames() {
     return Array.from(this.structures.keys());
   }
+
+  // Get structure display name
+  getStructureDisplayName(structureName) {
+    const structure = this.structures.get(structureName);
+    return structure?.name || structureName.charAt(0).toUpperCase() + structureName.slice(1).replace('-', ' ');
+  }
 }
 
 // Global measure highlighter instance
@@ -136,68 +163,78 @@ let measureHighlighter = null;
 function initializeMeasureHighlighter() {
   measureHighlighter = new MeasureHighlighter();
 
-  // Add structures - you can load these from external files later
-  measureHighlighter.addStructure('line-breaks', {
-    type: 'conditional',
-    colors: ['gainsboro', 'whitesmoke'],
-    opacity: '0.3',
-    condition: (barNumber) => {
-      // Example line starts from your original BWV1006 structure
-      const lineStarts = [1, 3, 7, 9, 17, 29, 33, 39, 43, 67, 79, 83, 90, 93, 99, 102, 109, 113, 119, 123, 130, 138];
-      return lineStarts.includes(barNumber) ? 0 : 1;
-    }
-  });
+  // Load structures from configuration if available
+  if (CONFIG?.measureHighlighters) {
+    Object.entries(CONFIG.measureHighlighters).forEach(([key, config]) => {
+      measureHighlighter.addStructure(key, config);
+    });
+    console.log(`Loaded ${Object.keys(CONFIG.measureHighlighters).length} measure highlighter structures from configuration`);
+  } else {
+    console.log('No measure highlighters defined in configuration');
+  }
 
-  // Simple alternating colors
-  measureHighlighter.addStructure('alternating', {
-    type: 'alternating',
-    colors: ['lightblue', 'lightgreen', 'lightyellow', 'lightpink'],
-    opacity: '0.25'
-  });
-
-  // Example: Harmonic analysis (adjust ranges as needed)
-  measureHighlighter.addStructure('harmonic', {
-    type: 'ranges',
-    opacity: '0.3',
-    ranges: [
-      { start: 1, end: 20, color: 'lightcyan' },
-      { start: 21, end: 40, color: 'lightgreen' },
-      { start: 41, end: 60, color: 'lightyellow' },
-      { start: 61, end: 80, color: 'lightpink' },
-      { start: 81, end: 100, color: 'lightblue' },
-      { start: 101, end: 138, color: 'lavender' }
-    ]
-  });
-
-  // Populate the select dropdown
-  populateHighlightSelect();
+  // Update UI based on available structures
+  updateMeasureControlsVisibility();
 }
 
-function populateHighlightSelect() {
+function updateMeasureControlsVisibility() {
+  const measureControls = document.getElementById('measure-controls');
   const select = document.getElementById('highlight-select');
-  if (!select || !measureHighlighter) return;
+  
+  if (!measureHighlighter || !measureControls || !select) return;
 
+  const structureNames = measureHighlighter.getStructureNames();
+  
+  if (structureNames.length === 0) {
+    // No highlighters available - hide the controls
+    measureControls.style.display = 'none';
+    console.log('No measure highlighters defined in configuration - hiding controls');
+    return;
+  }
+
+  // Show the controls
+  measureControls.style.display = 'block';
+  
   // Clear existing options except "None"
   while (select.children.length > 1) {
     select.removeChild(select.lastChild);
   }
 
   // Add structure options
-  measureHighlighter.getStructureNames().forEach(name => {
+  structureNames.forEach(name => {
     const option = document.createElement('option');
     option.value = name;
-    option.textContent = name.charAt(0).toUpperCase() + name.slice(1).replace('-', ' ');
+    option.textContent = measureHighlighter.getStructureDisplayName(name);
     select.appendChild(option);
   });
 
-  // Add event listener
-  select.addEventListener('change', (e) => {
-    if (e.target.value && measureHighlighter) {
-      measureHighlighter.applyStructure(e.target.value);
-    } else if (measureHighlighter) {
-      measureHighlighter.clearHighlights();
-    }
-  });
+  if (structureNames.length === 1) {
+    // Only one highlighter - disable choice, auto-select it
+    select.disabled = true;
+    select.value = structureNames[0];
+    measureHighlighter.applyStructure(structureNames[0]);
+    
+    console.log(`Only one measure highlighter available: ${structureNames[0]} - auto-applied`);
+  } else {
+    // Multiple highlighters - enable choice
+    select.disabled = false;
+    
+    console.log(`${structureNames.length} measure highlighters available - enabling choice`);
+  }
+
+  // Add event listener if not already added
+  if (!select.hasAttribute('data-listener-added')) {
+    select.addEventListener('change', (e) => {
+      if (e.target.value && measureHighlighter) {
+        measureHighlighter.applyStructure(e.target.value);
+        console.log(`Applied measure highlighter: ${e.target.value}`);
+      } else if (measureHighlighter) {
+        measureHighlighter.clearHighlights();
+        console.log('Cleared all measure highlights');
+      }
+    });
+    select.setAttribute('data-listener-added', 'true');
+  }
 }
 
 // =============================================================================
@@ -645,11 +682,8 @@ async function setup() {
     initializeNotes();
     initEventHandlers();
 
-    // Initialize measure highlighting after SVG is loaded
+    // Initialize measure highlighting after SVG is loaded and CONFIG is available
     initializeMeasureHighlighter();
-    
-    // Show measure controls
-    // document.getElementById('measure-controls').style.display = 'block';
 
     console.log(`Loaded ${notes.length} notes for ${CONFIG.workInfo.title}`);
     console.log(`Musical structure: ${CONFIG.musicalStructure.totalBars} bars in ${CONFIG.musicalStructure.totalDurationSeconds}s`);
