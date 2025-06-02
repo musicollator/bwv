@@ -39,7 +39,7 @@ jobs:
       run: |
         for sub in bwv1006 bwv543; do
           echo "⬇️ Cloning $sub with sparse checkout"
-          git clone --filter=blob:none --sparse https://github.com/musicollator/$sub.git $sub
+          git clone --filter=blob:none --sparse --no-checkout https://github.com/musicollator/$sub.git $sub
           cd $sub
           git sparse-checkout init --cone
           git sparse-checkout set exports/
