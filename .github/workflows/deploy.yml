@@ -33,31 +33,33 @@ jobs:
         for sub in bwv1006 bwv543; do
           url=$(git config --file .gitmodules --get submodule.${sub}.url)
 
-          echo "🔧 Cloning $sub with sparse-checkout..."
-          rm -rf $sub
+          echo "🔧 Cloning $sub without checkout..."
+          rm -rf "$sub"
           git clone --no-checkout "$url" "$sub"
 
           cd "$sub"
+
+          echo "🪄 Enabling sparse-checkout for $sub..."
           git sparse-checkout init --cone
           git sparse-checkout set exports/
-          git checkout
+
+          echo "🚧 Applying sparse-checkout via read-tree"
+          git read-tree -mu HEAD
+
           cd ..
         done
 
-    - name: Verify sparse checkout contents
+    - name: Verify sparse submodule contents
+      shell: bash
       run: |
-        echo "🧾 Files in bwv1006 after sparse checkout:"
-        ls -la bwv1006
-        echo ""
-        echo "📂 Contents of bwv1006 exports directory:"
-        ls -la bwv1006/exports || echo "No exports directory found"
-
-        echo ""
-        echo "🧾 Files in bwv543 after sparse checkout:"
-        ls -la bwv543
-        echo ""
-        echo "📂 Contents of bwv543 exports directory:"
-        ls -la bwv543/exports || echo "No exports directory found"
+        for sub in bwv1006 bwv543; do
+          echo "🧾 Files in $sub after sparse checkout:"
+          ls -la "$sub"
+          echo ""
+          echo "📂 Contents of $sub exports directory:"
+          ls -la "$sub/exports" || echo "No exports directory found"
+          echo ""
+        done
 
     - name: Create deployment directory
       run: |
