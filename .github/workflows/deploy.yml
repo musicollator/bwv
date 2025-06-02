@@ -1,18 +1,15 @@
-# .github/workflows/deploy.yml
 name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -23,69 +20,77 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout
+    - name: Checkout main repo
       uses: actions/checkout@v4
-        
-    - name: Init sparse submodules
+
+    - name: Init sparse submodules manually
+      shell: bash
       run: |
         git submodule init
-        
-        # Setup sparse checkout for bwv1006
-        git clone https://github.com/musicollator/bwv1006.git bwv1006        
-        cd bwv1006
-        git sparse-checkout init --cone
-        git sparse-checkout set exports/
-        echo "Files in bwv1006 after sparse checkout:"
-        ls -la
-        echo "Contents of bwv1006 exports directory:"
-        ls -la exports/ || echo "No exports directory found"
-        cd ..
-        
-        # Setup sparse checkout for bwv543
-        git clone https://github.com/musicollator/bwv543.git bwv543
-        cd bwv543
-        git sparse-checkout init --cone
-        git sparse-checkout set exports/
-        echo "Files in bwv543 after sparse checkout:"
-        ls -la
-        echo "Contents of bwv543 exports directory:"
-        ls -la exports/ || echo "No exports directory found"
-        cd ..
-        
+
+        for sub in bwv1006 bwv543; do
+          url=$(git config --file .gitmodules --get submodule.${sub}.url)
+
+          echo "🔧 Cloning $sub with sparse-checkout..."
+          rm -rf $sub
+          git clone --no-checkout "$url" "$sub"
+
+          cd "$sub"
+          git sparse-checkout init --cone
+          git sparse-checkout set exports/
+          git checkout
+          cd ..
+        done
+
+    - name: Verify sparse checkout contents
+      run: |
+        echo "🧾 Files in bwv1006 after sparse checkout:"
+        ls -la bwv1006
+        echo ""
+        echo "📂 Contents of bwv1006 exports directory:"
+        ls -la bwv1006/exports || echo "No exports directory found"
+
+        echo ""
+        echo "🧾 Files in bwv543 after sparse checkout:"
+        ls -la bwv543
+        echo ""
+        echo "📂 Contents of bwv543 exports directory:"
+        ls -la bwv543/exports || echo "No exports directory found"
+
     - name: Create deployment directory
       run: |
         mkdir deploy
-    
+
         # Copy root files
         cp index.html deploy/
-        
-        # Copy media directory  
+
+        # Copy media directory
         cp -r media deploy/
-        
-        # Copy both submodules with exports directories preserved
+
+        # Copy submodules (only exports folder should exist)
         cp -r bwv1006 deploy/
         cp -r bwv543 deploy/
-        
+
         # Show deployment contents and size
-        echo "Deployment contents:"
+        echo "📦 Deployment contents:"
         find deploy/ -type f -exec ls -lah {} \;
         echo ""
-        echo "Directory structure:"
+        echo "📁 Directory structure:"
         tree deploy/ || find deploy/ -type d
         echo ""
-        echo "Total deployment size:"
+        echo "📏 Total deployment size:"
         du -sh deploy/
-        
+
     - name: Setup Pages
       uses: actions/configure-pages@v4
-      
+
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
         path: './deploy'
-        
+
     - name: Deploy to GitHub Pages
       id: deployment
       uses: actions/deploy-pages@v4
