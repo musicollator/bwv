@@ -27,12 +27,13 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      with:
-        submodules: recursive
         
-    - name: Setup sparse checkout in submodules
+    - name: Init sparse submodules
       run: |
+        git submodule init
+        
         # Setup sparse checkout for bwv1006
+        git clone https://github.com/musicollator/bwv1006.git bwv1006        
         cd bwv1006
         git sparse-checkout init --cone
         git sparse-checkout set exports/
@@ -43,6 +44,7 @@ jobs:
         cd ..
         
         # Setup sparse checkout for bwv543
+        git clone https://github.com/musicollator/bwv543.git bwv543
         cd bwv543
         git sparse-checkout init --cone
         git sparse-checkout set exports/
