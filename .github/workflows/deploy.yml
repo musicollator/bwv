@@ -62,7 +62,9 @@ jobs:
       run: |
         mkdir deploy
         cp index.html deploy/
-        cp *.js deploy/
+        cp index.css deploy/
+        cp index.js deploy/
+        cp bar.js deploy/
         cp manifest.json deploy/
         cp sw.js deploy/
         cp -r media deploy/
