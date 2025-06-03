@@ -37,12 +37,13 @@
       <h2 class="d-flex align-items-center justify-content-center position-relative">
         <span id="work-title">Loading...</span>
       </h2>
-      <div class="d-flex align-items-center justify-content-evenly position-relative">
+      <div class="d-flex align-items-center justify-content-center position-relative">
         <!-- Main audio player -->
         <audio id="audio" class="" style="flex-basis: 50%; max-width: 640px;" controls>
           <source id="audio-source" src="" type="audio/wav">
           Your browser does not support the audio element.
         </audio>
+        <div style="width: 1rem;">&nbsp;</div>
         <!-- Bar spy - positioned dynamically by JavaScript -->
         <div id="bar_spy" class="badge rounded-pill text-bg-secondary" style="visibility: hidden;">
           <span id="current_bar">1</span>
@@ -75,21 +76,23 @@
 
     <div id="svg-container"></div>
 
-    <!-- Wikipedia link button - positioned dynamically by JavaScript -->
-    <a id="button_wikipedia" type="button" href="#" target="_blank" rel="noopener noreferrer"
-      class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center position-absolute rounded-circle" title=""
-      style="position: fixed; top: 20px; visibility: hidden; width: 28px; height: 28px; border: 1px solid gray; right: 0;">
-      <img src="media/Wikipedia's_W.svg" width="32" height="32" alt="Wikipedia"
-        style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
-    </a>
-    <!-- Scroll-to-top button - auto-hides when not needed -->
-    <a id="button_scroll_to_top" type="button" class="btn btn-outline-secondary mx-2 btn-sm d-inline-flex align-items-center justify-content-center"
-      style="position: fixed; bottom: 40px; right: 20px; visibility: hidden; width: 24px; height: 24px; border: 1px solid gray; z-index: 1000;" title="scroll_to_top"
-      onclick="document.getElementById('svg-container').scrollIntoView({ behavior: 'smooth', block: 'start'}); return false;">
-      <img src="media/up-arrow-svgrepo-com.svg" width="16" height="16" alt="scroll_up"
-        style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
-    </a>
   </div>
+
+  <!-- Wikipedia link button - positioned dynamically by JavaScript -->
+  <a id="button_wikipedia" type="button" href="#" target="_blank" rel="noopener noreferrer"
+    class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center position-fixed rounded-circle" title="wikipedia"
+    style="top: 20px; right: 0; visibility: hidden; width: 28px; height: 28px; border: 1px solid gray; z-index: 1040;">
+    <img src="media/Wikipedia's_W.svg" width="30" height="30" alt="Wikipedia"
+      style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
+  </a>
+  <!-- Scroll-to-top button - auto-hides when not needed -->
+  <a id="button_scroll_to_top" type="button" 
+    class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center position-fixed"
+    style="bottom: 40px; right: 0; visibility: hidden; width: 28px; height: 28px; border: 1px solid gray; z-index: 1040;" title="scroll_to_top"
+    onclick="document.getElementById('svg-container').scrollIntoView({ behavior: 'smooth', block: 'start'}); return false;">
+    <img src="media/up-arrow-svgrepo-com.svg" width="16" height="16" alt="scroll_up"
+      style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
+  </a>
 
   <footer id="footer" class="bg-light footer mt-auto py-1 d-flex flex-wrap justify-content-evenly shadow-sm border-top">
     <div class="ms-2" style="margin: auto 0;">

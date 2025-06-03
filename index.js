@@ -558,7 +558,8 @@ function positionButtons() {
 
   buttons.forEach(button => {
     const bRect = button.getBoundingClientRect()
-    button.style.right = `${window.innerWidth - svgRect.right - (bRect.right - bRect.left + 5)}px`;
+    button.style.right = `${window.innerWidth - svgRect.right - (bRect.right - bRect.left)}px`;
+    console.log(button, window.innerWidth - svgRect.right, bRect.right - bRect.left, '=',  button.style.right)
   });
 }
 
