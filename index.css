@@ -139,3 +139,15 @@ footer#footer {
   background-image: none;
   cursor: default;
 }
+
+/* Make h2 title smaller on mobile */
+@media (max-width: 768px) {
+  #work-title {
+    font-size: 1.1rem !important;
+  }
+  
+  /* Or target the h2 directly */
+  #header h2 {
+    font-size: 1.2rem !important;
+  }
+}
