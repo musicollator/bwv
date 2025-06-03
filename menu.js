@@ -120,7 +120,7 @@ class BWVNavigationMenu {
 
   navigateToWork(workId) {
     // Show loading state
-    this.showTransitionLoading();
+    // this.showTransitionLoading();
     
     // Update URL with new work parameter
     const url = new URL(window.location);
@@ -130,6 +130,7 @@ class BWVNavigationMenu {
     window.location.href = url.toString();
   }
 
+  /*
   showTransitionLoading() {
     // Create a loading overlay for smooth transitions
     const overlay = document.createElement('div');
@@ -147,6 +148,7 @@ class BWVNavigationMenu {
     
     // The overlay will be removed when the page reloads
   }
+  */
 
   // Method to get navigation info for external use
   getNavigationInfo() {

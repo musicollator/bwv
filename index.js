@@ -193,7 +193,7 @@ function updateMeasureControlsVisibility() {
   }
 
   // Show the controls
-  measureControls.style.display = 'block';
+  // measureControls.style.display = 'block';
 
   // Clear existing options except "None"
   while (select.children.length > 1) {
@@ -286,9 +286,6 @@ function applyConfiguration() {
   // Update page title and meta
   document.title = CONFIG.workInfo.title;
   document.getElementById('page-title').textContent = CONFIG.workInfo.title;
-
-  // Update work title in header
-  document.getElementById('work-title').textContent = CONFIG.workInfo.title;
 
   // Update total bars display
   document.getElementById('total_bars').textContent = CONFIG.musicalStructure.totalBars;
@@ -558,7 +555,7 @@ function positionButtons() {
 
   buttons.forEach(button => {
     const bRect = button.getBoundingClientRect()
-    button.style.right = `${window.innerWidth - svgRect.right - (bRect.right - bRect.left)}px`;
+    button.style.right = `${Math.max(0, window.innerWidth - svgRect.right - (bRect.right - bRect.left))}px`;
     console.log(button, window.innerWidth - svgRect.right, bRect.right - bRect.left, '=',  button.style.right)
   });
 }

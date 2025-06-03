@@ -66,29 +66,10 @@ jobs:
         cp index.js deploy/
         cp bars.js deploy/
         cp menu.js deploy/
-        cp manifest.json deploy/
-        cp sw.js deploy/
         cp -r media deploy/
         for sub in bwv1006 bwv543; do
           cp -r $sub deploy/
         done
-
-    - name: Verify PWA files in deployment
-      run: |
-        echo "🔍 Verifying PWA files in deployment directory:"
-        ls -la deploy/
-        echo ""
-        echo "📱 PWA manifest file:"
-        ls -la deploy/manifest.json || echo "❌ manifest.json missing"
-        echo ""
-        echo "⚙️ Service worker file:"
-        ls -la deploy/sw.js || echo "❌ sw.js missing"
-        echo ""
-        echo "🎨 PWA icons directory:"
-        ls -la deploy/media/icons/ || echo "❌ icons directory missing"
-        echo ""
-        echo "📊 Total deployment size:"
-        du -sh deploy/
 
     - name: Setup Pages
       uses: actions/configure-pages@v4

@@ -167,19 +167,3 @@ footer#footer {
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
-
-/* Mobile responsive adjustments */
-@media (max-width: 768px) {
-  #work-title {
-    font-size: 1.1rem !important;
-  }
-  
-  #header h2 {
-    font-size: 1.2rem !important;
-  }
-  
-  #bwv-navigation .btn {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-  }
-}
