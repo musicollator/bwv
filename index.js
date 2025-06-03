@@ -8,36 +8,36 @@ import { initializeLilyPondTiming, createLilyPondGetCurrentBar, getLilyPondTimin
 function processWerkParameter() {
   const urlParams = new URLSearchParams(window.location.search);
   const werkParam = urlParams.get('werk');
-  
+
   // Default fallback
   const defaultWorkId = 'bwv1006';
-  
+
   if (!werkParam) {
     console.log('No werk parameter found, using default:', defaultWorkId);
     return defaultWorkId;
   }
-  
+
   // Validation pattern: either digits only OR 'test' followed by non-digit/non-space characters
   const werkPattern = /^(?:\d+|test[^\d\s]*)$/;
-  
+
   if (!werkPattern.test(werkParam)) {
     console.warn(`Invalid werk parameter format: "${werkParam}". Expected digits only or 'test' followed by non-digit/non-space characters. Using default:`, defaultWorkId);
     return defaultWorkId;
   }
-  
+
   // If it's only digits, prefix with 'bwv'
   if (/^\d+$/.test(werkParam)) {
     const workId = `bwv${werkParam}`;
     console.log(`Digits-only werk parameter "${werkParam}" converted to:`, workId);
     return workId;
   }
-  
+
   // If it starts with 'test' and matches pattern, use as-is
   if (/^test[^\d\s]*$/.test(werkParam)) {
     console.log(`Test werk parameter used as-is:`, werkParam);
     return werkParam;
   }
-  
+
   // Fallback (shouldn't reach here due to regex validation above)
   console.warn(`Unexpected werk parameter: "${werkParam}". Using default:`, defaultWorkId);
   return defaultWorkId;
@@ -61,7 +61,7 @@ class MeasureHighlighter {
   applyStructure(structureName) {
     // Clear existing highlights
     this.clearHighlights();
-    
+
     const structure = this.structures.get(structureName);
     if (!structure) {
       console.warn(`Structure '${structureName}' not found`);
@@ -70,11 +70,11 @@ class MeasureHighlighter {
 
     // Find all elements with data-bar attributes
     const barElements = document.querySelectorAll('[data-bar]');
-    
+
     barElements.forEach(element => {
       const barNumber = parseInt(element.getAttribute('data-bar'));
       const style = this.getStyleForBar(barNumber, structure);
-      
+
       if (style) {
         Object.assign(element.style, style);
       }
@@ -90,7 +90,7 @@ class MeasureHighlighter {
         fillOpacity: structure.opacity || '0.3'
       };
     }
-    
+
     if (structure.type === 'conditional') {
       const colorIndex = this.evaluateCondition(barNumber, structure.condition);
       if (colorIndex >= 0 && colorIndex < structure.colors.length) {
@@ -100,7 +100,7 @@ class MeasureHighlighter {
         };
       }
     }
-    
+
     if (structure.type === 'ranges') {
       for (const range of structure.ranges) {
         if (barNumber >= range.start && barNumber <= range.end) {
@@ -111,7 +111,7 @@ class MeasureHighlighter {
         }
       }
     }
-    
+
     return null;
   }
 
@@ -121,15 +121,15 @@ class MeasureHighlighter {
       case 'line-starts':
         // Bars in the list get index 0, others get index 1
         return condition.bars.includes(barNumber) ? 0 : 1;
-      
+
       case 'modulo':
         // Every nth bar gets index 0, others get index 1
         return (barNumber % condition.divisor === condition.remainder) ? 0 : 1;
-      
+
       case 'specific-bars':
         // Specific bars get index 1, others get default_index (usually 0)
         return condition.bars.includes(barNumber) ? 1 : (condition.default_index || 0);
-      
+
       default:
         console.warn(`Unknown condition type: ${condition.type}`);
         return 0;
@@ -180,11 +180,11 @@ function initializeMeasureHighlighter() {
 function updateMeasureControlsVisibility() {
   const measureControls = document.getElementById('measure-controls');
   const select = document.getElementById('highlight-select');
-  
+
   if (!measureHighlighter || !measureControls || !select) return;
 
   const structureNames = measureHighlighter.getStructureNames();
-  
+
   if (structureNames.length === 0) {
     // No highlighters available - hide the controls
     measureControls.style.display = 'none';
@@ -194,7 +194,7 @@ function updateMeasureControlsVisibility() {
 
   // Show the controls
   measureControls.style.display = 'block';
-  
+
   // Clear existing options except "None"
   while (select.children.length > 1) {
     select.removeChild(select.lastChild);
@@ -213,12 +213,12 @@ function updateMeasureControlsVisibility() {
     select.disabled = true;
     select.value = structureNames[0];
     measureHighlighter.applyStructure(structureNames[0]);
-    
+
     console.log(`Only one measure highlighter available: ${structureNames[0]} - auto-applied`);
   } else {
     // Multiple highlighters - enable choice
     select.disabled = false;
-    
+
     console.log(`${structureNames.length} measure highlighters available - enabling choice`);
   }
 
@@ -279,6 +279,10 @@ async function loadConfiguration() {
 }
 
 function applyConfiguration() {
+
+  // Apply mobile timing adjustment FIRST
+  CONFIG = applyMobileTimingAdjustment(CONFIG);
+
   // Update page title and meta
   document.title = CONFIG.workInfo.title;
   document.getElementById('page-title').textContent = CONFIG.workInfo.title;
@@ -365,7 +369,7 @@ function getCurrentBar(currentTime) {
   if (lilyPondGetCurrentBar) {
     return lilyPondGetCurrentBar(currentTime);
   }
-  
+
   // Simple fallback calculation
   const secondsPerBar = CONFIG.musicalStructure.totalDurationSeconds / CONFIG.musicalStructure.totalBars;
   const barNumber = Math.floor(currentTime / secondsPerBar) + 1;
@@ -584,6 +588,44 @@ const debouncedPositionButtons = debounce(positionButtons, 50);
 const debouncedCheckScroll = debounce(checkScrollButtonVisibility, 50);
 
 // =============================================================================
+// SIMPLE MOBILE DETECTION AND TIMING ADJUSTMENT
+// =============================================================================
+
+/**
+ * Simple mobile device detection - returns true if mobile, false if desktop
+ */
+function isMobileDevice() {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos'];
+  const hasMobileUA = mobileKeywords.some(keyword => userAgent.includes(keyword));
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const smallScreen = window.screen.width <= 768;
+
+  return hasMobileUA || (hasTouch && smallScreen);
+}
+
+/**
+ * Apply mobile timing adjustment to configuration
+ */
+function applyMobileTimingAdjustment(config) {
+  const isMobile = isMobileDevice();
+  const originalLeadTime = config.musicalStructure.visualLeadTimeSeconds;
+
+  if (isMobile) {
+    // Add extra lead time for mobile devices (adjust this value as needed)
+    const mobileAdjustment = 0.2; // 200ms additional lead time for mobile
+    config.musicalStructure.visualLeadTimeSeconds = originalLeadTime + mobileAdjustment;
+
+    console.log(`📱 Mobile device detected - applying +${mobileAdjustment}s timing adjustment`);
+    console.log(`   Lead time: ${originalLeadTime.toFixed(3)}s → ${config.musicalStructure.visualLeadTimeSeconds.toFixed(3)}s`);
+  } else {
+    console.log(`🖥️  Desktop device - using original timing: ${originalLeadTime.toFixed(3)}s`);
+  }
+
+  return config;
+}
+
+// =============================================================================
 // REAL-TIME PLAYBACK SYNCHRONIZATION  
 // =============================================================================
 
@@ -667,13 +709,13 @@ async function setup() {
       const barNumber = Math.floor(currentTime / secondsPerBar) + 1;
       return Math.max(1, Math.min(CONFIG.musicalStructure.totalBars, barNumber));
     };
-    
+
     const lilyPondActive = initializeLilyPondTiming(
-      convertedNotes, 
+      convertedNotes,
       CONFIG.musicalStructure.totalDurationSeconds,
       originalGetCurrentBar
     );
-    
+
     if (lilyPondActive) {
       lilyPondGetCurrentBar = createLilyPondGetCurrentBar();
     }
