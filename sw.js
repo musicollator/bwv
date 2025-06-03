@@ -1,8 +1,8 @@
 // BWV Universal Player - Service Worker
 // Version 1.0.0
 
-const CACHE_NAME = 'bwv-player-v1';
-const STATIC_CACHE_NAME = 'bwv-player-static-v1';
+const CACHE_NAME = 'bwv-player-v4';
+const STATIC_CACHE_NAME = 'bwv-player-static-v4';
 
 // Core app files that should always be cached
 const CORE_FILES = [

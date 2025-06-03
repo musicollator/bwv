@@ -3,7 +3,6 @@
 
 <!-- BWV Universal Player -->
 
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,9 +30,22 @@
 </head>
 
 <body>
-  <!-- Sticky header with audio controls and navigation buttons -->
-  <div class="sticky-top bg-light py-2 shadow-sm border-bottom">
-    <div id="header" class="svg-at-top container-fluid text-center">
+  <!-- Sticky header with BWV navigation and audio controls -->
+  <div class="sticky-top bg-light shadow-sm border-bottom">
+    <!-- BWV Navigation Bar -->
+    <div id="bwv-navigation" class="border-bottom py-1">
+      <div class="d-flex justify-content-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary" data-work-id="bwv1006" type="button">
+          BWV 1006
+        </button>
+        <button class="btn btn-sm btn-outline-secondary" data-work-id="bwv543" type="button">
+          BWV 543
+        </button>
+      </div>
+    </div>
+    
+    <!-- Header with title and audio controls -->
+    <div id="header" class="py-2 container-fluid text-center">
       <h2 class="d-flex align-items-center justify-content-center position-relative">
         <span id="work-title">Loading...</span>
       </h2>
@@ -85,6 +97,7 @@
     <img src="media/Wikipedia's_W.svg" width="30" height="30" alt="Wikipedia"
       style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
   </a>
+  
   <!-- Scroll-to-top button - auto-hides when not needed -->
   <a id="button_scroll_to_top" type="button" 
     class="btn btn-outline-light btn-sm d-inline-flex align-items-center justify-content-center position-fixed"
@@ -102,6 +115,8 @@
     </div>
   </footer>
 
+  <!-- Load menu.js before index.js -->
+  <script type="module" src="menu.js"></script>
   <script type="module" src="index.js"></script>
 
   <!-- PWA Service Worker Registration -->

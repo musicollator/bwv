@@ -140,14 +140,46 @@ footer#footer {
   cursor: default;
 }
 
-/* Make h2 title smaller on mobile */
+/* BWV Navigation - minimal custom styles (Bootstrap handles most of it) */
+#bwv-navigation {
+  background: rgba(248, 249, 250, 0.9);
+}
+
+/* Transition loading overlay */
+.bwv-transition-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+
+.bwv-transition-content {
+  text-align: center;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile responsive adjustments */
 @media (max-width: 768px) {
   #work-title {
     font-size: 1.1rem !important;
   }
   
-  /* Or target the h2 directly */
   #header h2 {
     font-size: 1.2rem !important;
+  }
+  
+  #bwv-navigation .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
   }
 }
