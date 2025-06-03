@@ -553,19 +553,13 @@ function initializeNotes() {
 function positionButtons() {
   if (!svgGlobal) return;
 
-  const buttons = document.querySelectorAll('#button_wikipedia, #bar_spy');
-  const scrollButton = document.getElementById('button_scroll_to_top');
+  const buttons = document.querySelectorAll('#button_wikipedia, #button_scroll_to_top');
   const svgRect = svgGlobal.getBoundingClientRect();
 
   buttons.forEach(button => {
-    button.style.right = `${svgRect.left}px`;
-    button.style.zIndex = '12';
+    const bRect = button.getBoundingClientRect()
+    button.style.right = `${window.innerWidth - svgRect.right - (bRect.right - bRect.left + 5)}px`;
   });
-
-  if (scrollButton) {
-    scrollButton.style.right = `${window.innerWidth - svgRect.right}px`;
-    scrollButton.style.bottom = '20px';
-  }
 }
 
 // =============================================================================
