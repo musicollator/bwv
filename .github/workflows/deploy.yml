@@ -65,6 +65,7 @@ jobs:
         cp index.css deploy/
         cp index.js deploy/
         cp bars.js deploy/
+        cp menu.js deploy/
         cp manifest.json deploy/
         cp sw.js deploy/
         cp -r media deploy/
