@@ -35,16 +35,9 @@
     <!-- Header with title and audio controls -->
     <div id="header" class="py-2 container text-center">
       <div id="bwv-navigation" class="py-1">
-        <div class="d-flex justify-content-center gap-2">
-          <button class="btn btn-sm btn-outline-secondary" data-work-id="bwv1006" type="button">
-            BWV 1006
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" data-work-id="bwv849" type="button">
-            BWV 849
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" data-work-id="bwv543" type="button">
-            BWV 543
-          </button>
+        <div id="bwv-buttons-container" class="d-flex justify-content-center gap-2">
+          <!-- BWV navigation buttons will be dynamically inserted here -->
+          <div id="bwv-loading" class="text-muted small">Loading BWV navigation...</div>
         </div>
       </div>
       <div class="d-flex align-items-center justify-content-center position-relative  gap-2">
@@ -156,7 +149,7 @@
     let deferredPrompt;
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      console.log('💾 PWA install prompt available');
+      console.log('💾 PWV install prompt available');
       e.preventDefault();
       deferredPrompt = e;
 

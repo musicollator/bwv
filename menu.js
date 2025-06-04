@@ -1,22 +1,100 @@
 // =============================================================================
-// BWV NAVIGATION MENU SYSTEM - Simplified HTML-based version
+// BWV NAVIGATION MENU SYSTEM - Dynamic JSON-based version
 // =============================================================================
 
 class BWVNavigationMenu {
   constructor() {
-    this.availableWorks = ['bwv1006', 'bwv543', 'bwv849']; // Add more as needed
+    this.availableWorks = ['bwv1006']; // Fallback default
     this.currentWorkId = null;
     this.touchStartX = 0;
     this.touchEndX = 0;
     this.minSwipeDistance = 50;
+    this.isLoaded = false;
     
     this.init();
   }
 
-  init() {
+  async init() {
     this.updateCurrentWork();
+    await this.loadAvailableWorks();
+    this.createNavigationButtons();
     this.updateActiveState();
     this.attachEventListeners();
+  }
+
+  async loadAvailableWorks() {
+    try {
+      console.log('📚 Loading BWV list from bwvs.json...');
+      const response = await fetch('bwvs.json');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load bwvs.json: ${response.status}`);
+      }
+      
+      const bwvsData = await response.json();
+      
+      if (bwvsData.bwvs && Array.isArray(bwvsData.bwvs) && bwvsData.bwvs.length > 0) {
+        this.availableWorks = bwvsData.bwvs.sort(); // Sort alphabetically
+        console.log(`✅ Loaded ${this.availableWorks.length} BWV works:`, this.availableWorks);
+        console.log(`📅 Generated: ${bwvsData.generated}`);
+      } else {
+        throw new Error('Invalid bwvs.json format or empty BWV list');
+      }
+      
+      this.isLoaded = true;
+      
+    } catch (error) {
+      console.warn('⚠️ Failed to load BWV list from bwvs.json:', error.message);
+      console.log('📋 Using fallback BWV list:', this.availableWorks);
+      
+      // Show error in UI
+      this.showLoadingError('Failed to load BWV navigation. Using fallback.');
+      this.isLoaded = false;
+    }
+  }
+
+  createNavigationButtons() {
+    const container = document.getElementById('bwv-buttons-container');
+    const loadingDiv = document.getElementById('bwv-loading');
+    
+    if (!container) {
+      console.error('BWV buttons container not found');
+      return;
+    }
+
+    // Clear loading message
+    if (loadingDiv) {
+      loadingDiv.remove();
+    }
+
+    // Clear any existing buttons
+    container.innerHTML = '';
+
+    // Create buttons for each available work
+    this.availableWorks.forEach(workId => {
+      const button = document.createElement('button');
+      button.className = 'btn btn-sm btn-outline-secondary';
+      button.type = 'button';
+      button.setAttribute('data-work-id', workId);
+      
+      // Format display text (BWV 1006 from bwv1006)
+      const displayText = workId.replace(/^bwv/, 'BWV ').toUpperCase();
+      button.textContent = displayText;
+      
+      container.appendChild(button);
+    });
+
+    console.log(`📱 Created ${this.availableWorks.length} navigation buttons`);
+  }
+
+  showLoadingError(message) {
+    const container = document.getElementById('bwv-buttons-container');
+    const loadingDiv = document.getElementById('bwv-loading');
+    
+    if (loadingDiv) {
+      loadingDiv.className = 'text-warning small';
+      loadingDiv.textContent = message;
+    }
   }
 
   updateCurrentWork() {
@@ -158,8 +236,17 @@ class BWVNavigationMenu {
       totalWorks: this.availableWorks.length,
       availableWorks: this.availableWorks,
       hasPrevious: this.getCurrentWorkIndex() > 0,
-      hasNext: this.getCurrentWorkIndex() < this.availableWorks.length - 1
+      hasNext: this.getCurrentWorkIndex() < this.availableWorks.length - 1,
+      isLoaded: this.isLoaded
     };
+  }
+
+  // Method to refresh BWV list (useful for debugging or if bwvs.json updates)
+  async refresh() {
+    console.log('🔄 Refreshing BWV navigation...');
+    await this.loadAvailableWorks();
+    this.createNavigationButtons();
+    this.updateActiveState();
   }
 }
 
@@ -170,9 +257,9 @@ class BWVNavigationMenu {
 let bwvNavigation = null;
 
 // Initialize navigation when DOM is ready
-function initializeBWVNavigation() {
+async function initializeBWVNavigation() {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       bwvNavigation = new BWVNavigationMenu();
     });
   } else {
