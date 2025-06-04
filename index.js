@@ -555,8 +555,8 @@ function positionButtons() {
 
   buttons.forEach(button => {
     const bRect = button.getBoundingClientRect()
-    button.style.right = `${Math.max(0, window.innerWidth - svgRect.right - (bRect.right - bRect.left))}px`;
-    console.log(button, window.innerWidth - svgRect.right, bRect.right - bRect.left, '=',  button.style.right)
+    button.style.right = `${Math.ceil(Math.max(0, window.innerWidth - svgRect.right - (bRect.right - bRect.left)))}px`;
+    // console.log(button, window.innerWidth - svgRect.right, bRect.right - bRect.left, '=',  button.style.right)
   });
 }
 

@@ -4,7 +4,7 @@
 
 class BWVNavigationMenu {
   constructor() {
-    this.availableWorks = ['bwv1006', 'bwv543']; // Add more as needed
+    this.availableWorks = ['bwv1006', 'bwv543', 'bwv849']; // Add more as needed
     this.currentWorkId = null;
     this.touchStartX = 0;
     this.touchEndX = 0;
