@@ -28,16 +28,23 @@ jobs:
       with:
         submodules: false  # We'll do it manually
 
-    - name: Confirm submodule directories before manual clone
+    - name: Discover BWV submodules with exports
+      id: discover
       run: |
-        echo "🔍 Checking submodule directories before sparse clone:"
-        ls -la
-        ls -la bwv1006 || echo "bwv1006 not yet populated"
-        ls -la bwv543 || echo "bwv543 not yet populated"
-
-    - name: Sparse clone submodules manually
-      run: |
-        for sub in bwv1006 bwv543; do
+        echo "🔍 Discovering BWV submodules from .gitmodules..."
+        
+        # Get BWV submodules from .gitmodules file
+        if [ -f .gitmodules ]; then
+          ALL_BWV_SUBS=$(grep -E '^\[submodule "bwv' .gitmodules | sed 's/\[submodule "//;s/"\]//' | sort)
+          echo "Found BWV submodules in .gitmodules: $ALL_BWV_SUBS"
+        else
+          echo "No .gitmodules file found"
+          ALL_BWV_SUBS=""
+        fi
+        
+        # Clone each submodule and check for exports directory
+        VALID_SUBS=""
+        for sub in $ALL_BWV_SUBS; do
           echo "⬇️ Cloning $sub with sparse checkout"
           git clone --filter=blob:none --sparse --no-checkout https://github.com/musicollator/$sub.git $sub
           cd $sub
@@ -45,11 +52,25 @@ jobs:
           git sparse-checkout set exports/
           git read-tree -mu HEAD
           cd ..
+          
+          # Check if exports directory exists after cloning
+          if [ -d "$sub/exports" ]; then
+            echo "✅ $sub has exports directory - including"
+            VALID_SUBS="$VALID_SUBS $sub"
+          else
+            echo "⚠️ $sub does not have exports directory - skipping"
+            rm -rf $sub  # Clean up since we won't use it
+          fi
         done
+        
+        # Trim leading space and set output
+        VALID_SUBS=$(echo $VALID_SUBS | sed 's/^ *//')
+        echo "BWV_LIST=$VALID_SUBS" >> $GITHUB_OUTPUT
+        echo "📁 Valid BWV submodules with exports: $VALID_SUBS"
 
     - name: List contents of submodules
       run: |
-        for sub in bwv1006 bwv543; do
+        for sub in ${{ steps.discover.outputs.BWV_LIST }}; do
           echo "🧾 Files in $sub after sparse checkout:"
           ls -la $sub
           echo ""
@@ -57,6 +78,31 @@ jobs:
           ls -la $sub/exports || echo "No exports directory found"
           echo ""
         done
+
+    - name: Create BWV metadata JSON
+      run: |
+        echo "📝 Creating bwvs.json with discovered BWV directories..."
+        echo "{" > bwvs.json
+        echo '  "bwvs": [' >> bwvs.json
+        
+        # Convert BWV_LIST to JSON array format
+        FIRST=true
+        for sub in ${{ steps.discover.outputs.BWV_LIST }}; do
+          if [ "$FIRST" = true ]; then
+            echo "    \"$sub\"" >> bwvs.json
+            FIRST=false
+          else
+            echo "    ,\"$sub\"" >> bwvs.json
+          fi
+        done
+        
+        echo "  ]," >> bwvs.json
+        echo "  \"count\": $(echo '${{ steps.discover.outputs.BWV_LIST }}' | wc -w)," >> bwvs.json
+        echo "  \"generated\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> bwvs.json
+        echo "}" >> bwvs.json
+        
+        echo "📄 Generated bwvs.json:"
+        cat bwvs.json
 
     - name: Create deployment directory
       run: |
@@ -66,8 +112,10 @@ jobs:
         cp index.js deploy/
         cp bars.js deploy/
         cp menu.js deploy/
+        cp bwvs.json deploy/
         cp -r media deploy/
-        for sub in bwv1006 bwv543; do
+        for sub in ${{ steps.discover.outputs.BWV_LIST }}; do
+          echo "📦 Copying $sub to deploy directory"
           cp -r $sub deploy/
         done
 
