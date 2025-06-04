@@ -9,3 +9,6 @@
 [submodule "bwv849"]
 	path = bwv849
 	url = https://github.com/musicollator/bwv849.git
+[submodule "bwv659"]
+	path = bwv659
+	url = https://github.com/musicollator/bwv659.git
