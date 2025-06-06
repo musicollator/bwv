@@ -10,7 +10,7 @@ class BWVNavigationMenu {
     this.touchEndX = 0;
     this.minSwipeDistance = 50;
     this.isLoaded = false;
-    
+
     this.init();
   }
 
@@ -24,29 +24,31 @@ class BWVNavigationMenu {
 
   async loadAvailableWorks() {
     try {
-      // console.log('📚 Loading BWV list from bwvs.json...');
       const response = await fetch('bwvs.json');
-      
+
       if (!response.ok) {
         throw new Error(`Failed to load bwvs.json: ${response.status}`);
       }
-      
+
       const bwvsData = await response.json();
-      
+
       if (bwvsData.bwvs && Array.isArray(bwvsData.bwvs) && bwvsData.bwvs.length > 0) {
-        this.availableWorks = bwvsData.bwvs.sort(); // Sort alphabetically
-        // console.log(`✅ Loaded ${this.availableWorks.length} BWV works:`, this.availableWorks);
-        // console.log(`📅 Generated: ${bwvsData.generated}`);
+        // Numerical sorting by BWV number
+        this.availableWorks = bwvsData.bwvs.sort((a, b) => {
+          // Extract numeric part (remove 'bwv' prefix)
+          const numA = parseInt(a.replace(/^bwv/, ''), 10);
+          const numB = parseInt(b.replace(/^bwv/, ''), 10);
+          return numA - numB;
+        });
       } else {
         throw new Error('Invalid bwvs.json format or empty BWV list');
       }
-      
+
       this.isLoaded = true;
-      
+
     } catch (error) {
       console.warn('⚠️ Failed to load BWV list from bwvs.json:', error.message);
-      console.log('📋 Using fallback BWV list:', this.availableWorks);
-      
+
       // Show error in UI
       this.showLoadingError('Failed to load BWV navigation. Using fallback.');
       this.isLoaded = false;
@@ -56,7 +58,7 @@ class BWVNavigationMenu {
   createNavigationButtons() {
     const container = document.getElementById('bwv-buttons-container');
     const loadingDiv = document.getElementById('bwv-loading');
-    
+
     if (!container) {
       console.error('BWV buttons container not found');
       return;
@@ -76,11 +78,11 @@ class BWVNavigationMenu {
       button.className = 'btn btn-sm btn-outline-dark';
       button.type = 'button';
       button.setAttribute('data-work-id', workId);
-      
+
       // Format display text (BWV 1006 from bwv1006)
       const displayText = workId.replace(/^bwv/, 'BWV ').toUpperCase();
       button.textContent = displayText;
-      
+
       container.appendChild(button);
     });
 
@@ -90,7 +92,7 @@ class BWVNavigationMenu {
   showLoadingError(message) {
     const container = document.getElementById('bwv-buttons-container');
     const loadingDiv = document.getElementById('bwv-loading');
-    
+
     if (loadingDiv) {
       loadingDiv.className = 'text-warning small';
       loadingDiv.textContent = message;
@@ -101,7 +103,7 @@ class BWVNavigationMenu {
     // Get current work from URL parameter
     const urlParams = new URLSearchParams(window.location.search);
     const werkParam = urlParams.get('werk');
-    
+
     if (werkParam) {
       this.currentWorkId = werkParam.match(/^\d+$/) ? `bwv${werkParam}` : werkParam;
     } else {
@@ -115,7 +117,7 @@ class BWVNavigationMenu {
       btn.classList.remove('btn-warning');
       btn.classList.add('btn-outline-dark');
     });
-    
+
     // Add active styling to current work
     const activeBtn = document.querySelector(`[data-work-id="${this.currentWorkId}"]`);
     if (activeBtn) {
@@ -162,7 +164,7 @@ class BWVNavigationMenu {
 
   handleSwipeGesture() {
     const swipeDistance = this.touchEndX - this.touchStartX;
-    
+
     if (Math.abs(swipeDistance) < this.minSwipeDistance) {
       return; // Not a significant swipe
     }
@@ -199,11 +201,11 @@ class BWVNavigationMenu {
   navigateToWork(workId) {
     // Show loading state
     // this.showTransitionLoading();
-    
+
     // Update URL with new work parameter
     const url = new URL(window.location);
     url.searchParams.set('werk', workId.replace('bwv', ''));
-    
+
     // Navigate to new work
     window.location.href = url.toString();
   }
