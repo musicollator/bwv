@@ -1,5 +1,6 @@
 // Import LilyPond timing system
 import { initializeLilyPondTiming, createLilyPondGetCurrentBar, getLilyPondTimingInfo } from '/js/bars.js';
+// Import intelligent channel to color mapping (reads from CSS)
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
 
 // =============================================================================
@@ -203,7 +204,7 @@ async function loadConfiguration() {
   try {
     const workId = processWerkParameter();
     const configResponse = await fetch(`${workId}/exports/${workId}.config.yaml`);
-    
+
     if (!configResponse.ok) {
       throw new Error(`Failed to load configuration for ${workId}`);
     }
@@ -248,7 +249,7 @@ function showConfigurationError(message) {
       <h4 class="alert-heading">Configuration Error</h4>
       <p>${message}</p>
       <hr>
-      <p class="mb-0">Please check that the configuration file exists and is valid JSON.</p>
+      <p class="mb-0">Please check that the configuration file exists and is valid YAML.</p>
     </div>
   `;
 }
@@ -278,20 +279,20 @@ let lilyPondGetCurrentBar = null;
 
 function initializeBarMapping() {
   bar2rectsGlobal.clear();
-  
+
   // Single DOM query to get all bar rects
   const allBarRects = document.querySelectorAll('rect[data-bar]');
-  
-  allBarRects.forEach(rect => {
-    const barNumber = parseInt(rect.getAttribute('data-bar'));
+
+  allBarRects.forEach(barRect => {
+    const barNumber = parseInt(barRect.getAttribute('data-bar'));
     if (!isNaN(barNumber)) {
       if (!bar2rectsGlobal.has(barNumber)) {
         bar2rectsGlobal.set(barNumber, []);
       }
-      bar2rectsGlobal.get(barNumber).push(rect);
+      bar2rectsGlobal.get(barNumber).push(barRect);
     }
   });
-  
+
   console.log(`📊 Bar mapping initialized: ${bar2rectsGlobal.size} bars, ${allBarRects.length} total rects`);
 }
 
@@ -405,9 +406,9 @@ function scrollToBar(barRects) {
 
 function hideAllBars() {
   // Use cached mapping for better performance
-  bar2rectsGlobal.forEach(rects => {
-    rects.forEach(rect => {
-      rect.style.visibility = 'hidden';
+  bar2rectsGlobal.forEach(barRects => {
+    barRects.forEach(barRect => {
+      barRect.style.visibility = 'hidden';
     });
   });
   currentVisibleBar = -1;
@@ -415,17 +416,17 @@ function hideAllBars() {
 
 function showBar(barNumber) {
   // Single lookup - get rects once and reuse
-  const rects = bar2rectsGlobal.get(barNumber);
-  if (!rects) return;
+  const barRects = bar2rectsGlobal.get(barNumber);
+  if (!barRects) return;
 
   // Pass rects directly instead of barNumber to avoid duplicate lookup
-  scrollToBar(rects);
-  
+  scrollToBar(barRects);
+
   currentBarGlobal.innerText = barNumber;
-  
+
   // Reuse the same rects for visibility
-  rects.forEach(rect => {
-    rect.style.visibility = 'visible';
+  barRects.forEach(barRect => {
+    barRect.style.visibility = 'visible';
   });
 }
 
@@ -449,7 +450,7 @@ function unhighlightAllNotes() {
 }
 
 // =============================================================================
-// NOTE DATA CONVERSION (Updated with Intelligent Channel Mapping)
+// NOTE DATA CONVERSION (Updated with Intelligent Channel Mapping from CSS)
 // =============================================================================
 
 function convertNotesFromTicks() {
@@ -457,7 +458,7 @@ function convertNotesFromTicks() {
     Math.max(note.on_tick || 0, note.off_tick || 0)
   ));
 
-  // Create intelligent channel mapping based on pitch ranges
+  // Create intelligent channel mapping based on pitch ranges (reads from CSS)
   const channelColorMap = createChannelColorMapping(noteDataGlobal);
 
   convertedNotes = noteDataGlobal.map(rawNote => {
@@ -485,8 +486,8 @@ function convertNotesFromTicks() {
   });
 
   convertedNotes.sort((a, b) => a.on - b.on);
-  
-  // Log intelligent channel mapping
+
+  // Log intelligent channel mapping (with actual CSS colors)
   logChannelMapping(channelColorMap, noteDataGlobal);
 }
 
@@ -599,13 +600,16 @@ function syncLoop() {
 }
 
 // =============================================================================
-// APPLICATION INITIALIZATION
+// APPLICATION INITIALIZATION (with Glorious Bach Loading)
 // =============================================================================
 
 async function setup() {
+  // Replace boring spinner with majestic Bach siegel loading!
   try {
+    // Load configuration
     await loadConfiguration();
 
+    // Load SVG and note data in parallel
     const [svgText, noteData] = await Promise.all([
       fetch(CONFIG.files.svgPath).then(r => {
         if (!r.ok) throw new Error(`Failed to load SVG: ${CONFIG.files.svgPath}`);
@@ -640,7 +644,7 @@ async function setup() {
 
     convertNotesFromTicks();
 
-    // Initialize LilyPond timing system
+    // Initialize LilyPond timing system with config support
     const originalGetCurrentBar = (currentTime) => {
       const secondsPerBar = CONFIG.musicalStructure.totalDurationSeconds / CONFIG.musicalStructure.totalBars;
       const barNumber = Math.floor(currentTime / secondsPerBar) + 1;
@@ -651,7 +655,7 @@ async function setup() {
       convertedNotes,
       CONFIG.musicalStructure.totalDurationSeconds,
       originalGetCurrentBar,
-      CONFIG
+      CONFIG  // Pass CONFIG for anacrusis and incomplete measure support
     );
 
     if (lilyPondActive) {
@@ -664,11 +668,16 @@ async function setup() {
 
     // Essential info only
     console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${notes.length} notes, ${CONFIG.musicalStructure.totalBars} bars`);
-    
+
     const timingInfo = getLilyPondTimingInfo();
     if (timingInfo.isActive) {
       console.log('✅ LilyPond timing active');
     }
+
+    console.log('🎵 BWV Player fully loaded and ready!');
+
+    // After Bach loading completes, show the interface
+    checkScrollButtonVisibility();
 
   } catch (err) {
     console.error("Setup error:", err);
@@ -677,7 +686,6 @@ async function setup() {
   }
 
   document.getElementById("loading")?.classList.add("d-none");
-  checkScrollButtonVisibility();
 }
 
 // =============================================================================

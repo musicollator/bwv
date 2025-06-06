@@ -45,6 +45,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   background-color: white;
+  padding-top: var(--header-height); /* Compensate for fixed header */
 }
 
 /* Main content area grows to fill available space */
@@ -264,4 +265,69 @@ footer#footer {
 /* Target the specific path structure */
 #svg-container>svg a path[fill="none"][stroke="none"] {
   display: none !important;
+}
+
+/* =============================================================================
+   BACH SIEGEL LOADING STYLES
+   ============================================================================= */
+
+.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+div.siegel {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-color: transparent;
+}
+
+div#logoLeft {
+  background-color: transparent;
+  left: -111vw;
+}
+
+div#logoLeft div#backgroundLeft {
+  position: relative;
+  background-color: #ffffffc0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+}
+
+div.siegel#foregroundLeft {
+  background-image: url("index.svg#bach_siel_full_left-view");
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 6;
+}
+
+div#logoRight {
+  background-color: transparent;
+  left: +111vw;
+}
+
+div#logoRight div#backgroundRight {
+  position: relative;
+  background-color: #ffffffc0;
+  width: 100%;
+  height: 100%;
+  z-index: 4;
+}
+
+div.siegel#foregroundRight {
+  background-image: url("index.svg#bach_siel_full_right-view");
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
 }
