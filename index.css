@@ -4,6 +4,7 @@
   /* 🎼 Bach Color Palette - Easy to modify! */
   --bach-cream: #faf8f3;        /* Primary background */
   --bach-taupe: #d4c4a8;        /* Secondary/controls */
+  --bach-taupe-50: rgba(212, 196, 168, 0.5);  /* 50% opacity taupe */
   --bach-brown: #8b6f47;        /* Active/selected */
   --bach-dark: #5a4037;         /* Text/borders */
   --bach-gold: #c8a882;         /* Special accent */
@@ -135,14 +136,14 @@ body.seeking #bar_spy :first-child {
 
 /* Header border styling */
 .sticky-top.border-bottom {
-  border-bottom-color: var(--bach-taupe) !important;
+  border-bottom-color: var(--bach-taupe-50) !important;
 }
 
 footer#footer {
   visibility: visible;
   z-index: 10;
   background-color: var(--bach-cream) !important;
-  border-top-color: var(--bach-taupe) !important;
+  border-top-color: var(--bach-taupe-50) !important;
   color: var(--bach-dark);
 }
 
@@ -193,6 +194,18 @@ footer#footer {
 
 #bwv-navigation .btn-warning:hover {
   background-color: var(--bach-brown);
+  border-color: var(--bach-brown);
+  color: white;
+}
+
+#bwv-navigation .btn-outline-dark {
+  background-color: transparent;
+  border-color: var(--bach-brown);
+  color: var(--bach-dark);
+}
+
+#bwv-navigation .btn-outline-dark:hover {
+  background-color: var(--bach-dark);
   border-color: var(--bach-brown);
   color: white;
 }
