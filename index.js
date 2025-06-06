@@ -420,6 +420,13 @@ function convertNotesFromTicks() {
     Math.max(note.on_tick || 0, note.off_tick || 0)
   ));
 
+  // Create channel mapping from actual MIDI channels to color indices
+  const usedChannels = [...new Set(noteDataGlobal.map(note => note.channel))].sort((a, b) => a - b);
+  const channelColorMap = new Map();
+  usedChannels.forEach((channel, index) => {
+    channelColorMap.set(channel, index);
+  });
+
   convertedNotes = noteDataGlobal.map(rawNote => {
     const note = convertNoteTiming(rawNote);
 
@@ -428,8 +435,10 @@ function convertNotesFromTicks() {
       return svgGlobal.querySelector(selector);
     }).filter(Boolean);
 
+    // Map actual MIDI channel to color index
+    const colorIndex = channelColorMap.get(note.channel);
     elements.forEach(el => {
-      el.classList.add(`channel-${note.channel}`);
+      el.classList.add(`channel-${colorIndex}`);
     });
 
     return {
@@ -437,11 +446,51 @@ function convertNotesFromTicks() {
       off: note.off,
       pitch: note.pitch,
       channel: note.channel,
+      colorIndex: colorIndex, // Store both for debugging
       elements,
     };
   });
 
   convertedNotes.sort((a, b) => a.on - b.on);
+  
+  // Log MIDI channel information with color mapping
+  logMidiChannels(channelColorMap);
+}
+
+function logMidiChannels(channelColorMap) {
+  const channelStats = new Map();
+  const colorNames = ['coral', 'lightgreen', 'dodgerblue', 'bach-gold', 'mediumpurple', 'lightpink'];
+  
+  // Count notes per channel
+  convertedNotes.forEach(note => {
+    if (!channelStats.has(note.channel)) {
+      channelStats.set(note.channel, {
+        count: 0,
+        pitchRange: { min: Infinity, max: -Infinity }
+      });
+    }
+    
+    const stats = channelStats.get(note.channel);
+    stats.count++;
+    stats.pitchRange.min = Math.min(stats.pitchRange.min, note.pitch);
+    stats.pitchRange.max = Math.max(stats.pitchRange.max, note.pitch);
+  });
+  
+  // Sort channels numerically
+  const sortedChannels = Array.from(channelStats.keys()).sort((a, b) => a - b);
+  
+  console.log('🎵 MIDI Channels → Colors:');
+  sortedChannels.forEach(channel => {
+    const stats = channelStats.get(channel);
+    const colorIndex = channelColorMap.get(channel);
+    const colorName = colorNames[colorIndex] || `color-${colorIndex}`;
+    const pitchInfo = stats.pitchRange.min !== Infinity 
+      ? `(pitch ${stats.pitchRange.min}-${stats.pitchRange.max})`
+      : '';
+    console.log(`  Channel ${channel} → ${colorName}: ${stats.count} notes ${pitchInfo}`);
+  });
+  
+  console.log(`📊 Total: ${sortedChannels.length} channels, ${convertedNotes.length} notes`);
 }
 
 function initializeNotes() {
