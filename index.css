@@ -18,7 +18,7 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  
+  background-color: white;
 }
 
 /* Main content area grows to fill available space */
@@ -39,7 +39,12 @@ body {
 }
 
 #svg-container>svg a[href] {
-  color: var(--bach-dark);
+  color: black;
+}
+
+/* SVG fill color */
+#svg-container>svg * {
+  fill: black;
 }
 
 /* Note highlighting transitions - slow fade out for smooth visual */
@@ -128,11 +133,16 @@ body.seeking #bar_spy :first-child {
   text-align: right;
 }
 
+/* Header border styling */
+.sticky-top.border-bottom {
+  border-bottom-color: var(--bach-taupe) !important;
+}
+
 footer#footer {
   visibility: visible;
   z-index: 10;
   background-color: var(--bach-cream) !important;
-  border-color: var(--bach-taupe);
+  border-top-color: var(--bach-taupe) !important;
   color: var(--bach-dark);
 }
 
@@ -210,4 +220,9 @@ footer#footer {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--bach-taupe);
   color: var(--bach-dark);
+}
+
+/* Target the specific path structure */
+#svg-container>svg a path[fill="none"][stroke="none"] {
+  display: none !important;
 }
