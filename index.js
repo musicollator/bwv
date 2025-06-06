@@ -1,5 +1,6 @@
 // Import LilyPond timing system
 import { initializeLilyPondTiming, createLilyPondGetCurrentBar, getLilyPondTimingInfo } from '/js/bars.js';
+import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
 
 // =============================================================================
 // WERK PARAMETER PROCESSING
@@ -265,8 +266,34 @@ let currentVisibleBar = -1;
 let HEADER_HEIGHT = 120;
 let maxTick = 0;
 
+// Performance optimization: Bar element mapping
+let bar2rectsGlobal = new Map(); // barNumber -> array of rect elements
+
 // LilyPond timing integration
 let lilyPondGetCurrentBar = null;
+
+// =============================================================================
+// BAR MAPPING INITIALIZATION (Performance Optimization)
+// =============================================================================
+
+function initializeBarMapping() {
+  bar2rectsGlobal.clear();
+  
+  // Single DOM query to get all bar rects
+  const allBarRects = document.querySelectorAll('rect[data-bar]');
+  
+  allBarRects.forEach(rect => {
+    const barNumber = parseInt(rect.getAttribute('data-bar'));
+    if (!isNaN(barNumber)) {
+      if (!bar2rectsGlobal.has(barNumber)) {
+        bar2rectsGlobal.set(barNumber, []);
+      }
+      bar2rectsGlobal.get(barNumber).push(rect);
+    }
+  });
+  
+  console.log(`📊 Bar mapping initialized: ${bar2rectsGlobal.size} bars, ${allBarRects.length} total rects`);
+}
 
 // =============================================================================
 // MIDI TIMING CONVERSION
@@ -342,18 +369,17 @@ function checkScrollButtonVisibility() {
 }
 
 // =============================================================================
-// SMART SCROLLING SYSTEM
+// OPTIMIZED SMART SCROLLING SYSTEM
 // =============================================================================
 
-function scrollToBar(barNumber) {
-  const rects = document.querySelectorAll(`rect[data-bar="${barNumber}"]`);
-  if (rects.length === 0) return;
+function scrollToBar(barRects) {
+  if (!barRects || barRects.length === 0) return;
 
   let minTop = Infinity, maxBottom = -Infinity;
-  rects.forEach(rect => {
-    const boundingRect = rect.getBoundingClientRect();
-    minTop = Math.min(minTop, boundingRect.top);
-    maxBottom = Math.max(maxBottom, boundingRect.bottom);
+  barRects.forEach(barRect => {
+    const { top, bottom } = barRect.getBoundingClientRect();
+    minTop = Math.min(minTop, top);
+    maxBottom = Math.max(maxBottom, bottom);
   });
 
   const padding = 32;
@@ -374,20 +400,31 @@ function scrollToBar(barNumber) {
 }
 
 // =============================================================================
-// BAR MANAGEMENT
+// OPTIMIZED BAR MANAGEMENT
 // =============================================================================
 
 function hideAllBars() {
-  document.querySelectorAll('rect[data-bar]').forEach(rect => {
-    rect.style.visibility = 'hidden';
+  // Use cached mapping for better performance
+  bar2rectsGlobal.forEach(rects => {
+    rects.forEach(rect => {
+      rect.style.visibility = 'hidden';
+    });
   });
   currentVisibleBar = -1;
 }
 
 function showBar(barNumber) {
-  scrollToBar(barNumber);
+  // Single lookup - get rects once and reuse
+  const rects = bar2rectsGlobal.get(barNumber);
+  if (!rects) return;
+
+  // Pass rects directly instead of barNumber to avoid duplicate lookup
+  scrollToBar(rects);
+  
   currentBarGlobal.innerText = barNumber;
-  document.querySelectorAll(`rect[data-bar="${barNumber}"]`).forEach(rect => {
+  
+  // Reuse the same rects for visibility
+  rects.forEach(rect => {
     rect.style.visibility = 'visible';
   });
 }
@@ -412,7 +449,7 @@ function unhighlightAllNotes() {
 }
 
 // =============================================================================
-// NOTE DATA CONVERSION
+// NOTE DATA CONVERSION (Updated with Intelligent Channel Mapping)
 // =============================================================================
 
 function convertNotesFromTicks() {
@@ -420,12 +457,8 @@ function convertNotesFromTicks() {
     Math.max(note.on_tick || 0, note.off_tick || 0)
   ));
 
-  // Create channel mapping from actual MIDI channels to color indices
-  const usedChannels = [...new Set(noteDataGlobal.map(note => note.channel))].sort((a, b) => a - b);
-  const channelColorMap = new Map();
-  usedChannels.forEach((channel, index) => {
-    channelColorMap.set(channel, index);
-  });
+  // Create intelligent channel mapping based on pitch ranges
+  const channelColorMap = createChannelColorMapping(noteDataGlobal);
 
   convertedNotes = noteDataGlobal.map(rawNote => {
     const note = convertNoteTiming(rawNote);
@@ -435,7 +468,7 @@ function convertNotesFromTicks() {
       return svgGlobal.querySelector(selector);
     }).filter(Boolean);
 
-    // Map actual MIDI channel to color index
+    // Map actual MIDI channel to intelligently assigned color index
     const colorIndex = channelColorMap.get(note.channel);
     elements.forEach(el => {
       el.classList.add(`channel-${colorIndex}`);
@@ -446,51 +479,15 @@ function convertNotesFromTicks() {
       off: note.off,
       pitch: note.pitch,
       channel: note.channel,
-      colorIndex: colorIndex, // Store both for debugging
+      colorIndex: colorIndex, // Store for debugging
       elements,
     };
   });
 
   convertedNotes.sort((a, b) => a.on - b.on);
   
-  // Log MIDI channel information with color mapping
-  logMidiChannels(channelColorMap);
-}
-
-function logMidiChannels(channelColorMap) {
-  const channelStats = new Map();
-  const colorNames = ['coral', 'lightgreen', 'dodgerblue', 'bach-gold', 'mediumpurple', 'lightpink'];
-  
-  // Count notes per channel
-  convertedNotes.forEach(note => {
-    if (!channelStats.has(note.channel)) {
-      channelStats.set(note.channel, {
-        count: 0,
-        pitchRange: { min: Infinity, max: -Infinity }
-      });
-    }
-    
-    const stats = channelStats.get(note.channel);
-    stats.count++;
-    stats.pitchRange.min = Math.min(stats.pitchRange.min, note.pitch);
-    stats.pitchRange.max = Math.max(stats.pitchRange.max, note.pitch);
-  });
-  
-  // Sort channels numerically
-  const sortedChannels = Array.from(channelStats.keys()).sort((a, b) => a - b);
-  
-  console.log('🎵 MIDI Channels → Colors:');
-  sortedChannels.forEach(channel => {
-    const stats = channelStats.get(channel);
-    const colorIndex = channelColorMap.get(channel);
-    const colorName = colorNames[colorIndex] || `color-${colorIndex}`;
-    const pitchInfo = stats.pitchRange.min !== Infinity 
-      ? `(pitch ${stats.pitchRange.min}-${stats.pitchRange.max})`
-      : '';
-    console.log(`  Channel ${channel} → ${colorName}: ${stats.count} notes ${pitchInfo}`);
-  });
-  
-  console.log(`📊 Total: ${sortedChannels.length} channels, ${convertedNotes.length} notes`);
+  // Log intelligent channel mapping
+  logChannelMapping(channelColorMap, noteDataGlobal);
 }
 
 function initializeNotes() {
@@ -631,11 +628,15 @@ async function setup() {
     footerElementGlobal = document.getElementById('footer');
     footerElementGlobal.style.visibility = "visible";
     currentBarGlobal = document.getElementById('current_bar');
+
     HEADER_HEIGHT = 120;
 
     if (!svgGlobal) {
       throw new Error("SVG element not found in loaded content");
     }
+
+    // Initialize bar mapping for performance optimization
+    initializeBarMapping();
 
     convertNotesFromTicks();
 

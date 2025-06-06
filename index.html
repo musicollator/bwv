@@ -17,8 +17,8 @@
 </head>
 
 <body>
-  <!-- Sticky header with BWV navigation and audio controls -->
-  <div class="sticky-top bg-light border-bottom" style="background-color: var(--bach-cream) !important;">
+  <!-- Fixed header with BWV navigation and audio controls -->
+  <div class="fixed-top bg-light border-bottom" style="background-color: var(--bach-cream) !important;">
     <!-- BWV Navigation Bar -->
 
     <!-- Header with title and audio controls -->
@@ -45,29 +45,32 @@
     </div>
   </div>
 
-  <!-- Loading spinner - hidden after content loads -->
-  <div id="loading" class="text-center my-5">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-    <div>Loading configuration and score…</div>
-  </div>
-
-  <!-- Main content area for musical notation -->
-  <div class="container" style="background-color: transparent;">
-
-    <!-- Updated measure controls with fixed dropdown styling -->
-    <div id="measure-controls" style="display: none;">
-      <label for="highlight-select">Measure Highlighting:</label>
-      <select id="highlight-select" class="form-select form-select-sm">
-        <option value="">None</option>
-      </select>
-      <small id="highlight-info" class="text-muted ms-2" style="display: none;"></small>
+  <!-- Add missing main-content wrapper -->
+  <div class="main-content">
+    <!-- Loading spinner - hidden after content loads -->
+    <div id="loading" class="text-center my-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <div>Loading configuration and score…</div>
     </div>
 
-    <div id="svg-container"></div>
+    <!-- Main content area for musical notation -->
+    <div class="container" style="background-color: transparent;">
 
-  </div>
+      <!-- Updated measure controls with fixed dropdown styling -->
+      <div id="measure-controls" style="display: none;">
+        <label for="highlight-select">Measure Highlighting:</label>
+        <select id="highlight-select" class="form-select form-select-sm">
+          <option value="">None</option>
+        </select>
+        <small id="highlight-info" class="text-muted ms-2" style="display: none;"></small>
+      </div>
+
+      <div id="svg-container"></div>
+
+    </div>
+  </div> <!-- End main-content wrapper -->
 
   <!-- Wikipedia link button - positioned dynamically by JavaScript -->
   <a id="button_wikipedia" type="button" href="#" target="_blank" rel="noopener noreferrer"

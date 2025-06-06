@@ -8,6 +8,31 @@
   --bach-brown: #8b6f47;        /* Active/selected */
   --bach-dark: #5a4037;         /* Text/borders */
   --bach-gold: #c8a882;         /* Special accent */
+
+  /* 🎵 Voice Color System - Single Source of Truth */
+  --voice-0-color: coral;
+  --voice-0-name: 'SOPRANO';
+  --voice-0-description: 'highest voice - warm, bright';
+  
+  --voice-1-color: lightgreen;
+  --voice-1-name: 'BASS';
+  --voice-1-description: 'lowest voice - solid, grounding';
+  
+  --voice-2-color: dodgerblue;
+  --voice-2-name: 'ALTO';
+  --voice-2-description: 'second highest - clear, supporting';
+  
+  --voice-3-color: lightpink;
+  --voice-3-name: 'TENOR';
+  --voice-3-description: 'second lowest - warm, melodic';
+  
+  --voice-4-color: mediumpurple;
+  --voice-4-name: 'VOICE5';
+  --voice-4-description: 'additional voices';
+  
+  --voice-5-color: lightsalmon;
+  --voice-5-name: 'VOICE6';
+  --voice-5-description: 'additional voices';
 }
 
 /* Sticky footer layout */
@@ -79,35 +104,35 @@ body.seeking #svg-container>svg rect[data-bar] {
   filter: blur(1rem) drop-shadow(0 0 0.2rem var(--bach-dark));
 }
 
-/* Channel-specific colors for different instrument parts */
+/* Channel-specific colors - using CSS custom properties as source of truth */
 body.playing #svg-container>svg a[href].active.channel-0 path {
-  fill: coral !important;
-  filter: drop-shadow(0 0 5px coral) drop-shadow(0 0 10px coral);
+  fill: var(--voice-0-color) !important;
+  filter: drop-shadow(0 0 5px var(--voice-0-color)) drop-shadow(0 0 10px var(--voice-0-color));
 }
 
 body.playing #svg-container>svg a[href].active.channel-1 path {
-  fill: lightgreen !important;
-  filter: drop-shadow(0 0 5px lightgreen) drop-shadow(0 0 10px lightgreen);
+  fill: var(--voice-1-color) !important;
+  filter: drop-shadow(0 0 5px var(--voice-1-color)) drop-shadow(0 0 10px var(--voice-1-color));
 }
 
 body.playing #svg-container>svg a[href].active.channel-2 path {
-  fill: dodgerblue !important;
-  filter: drop-shadow(0 0 5px dodgerblue) drop-shadow(0 0 10px dodgerblue);
+  fill: var(--voice-2-color) !important;
+  filter: drop-shadow(0 0 5px var(--voice-2-color)) drop-shadow(0 0 10px var(--voice-2-color));
 }
 
 body.playing #svg-container>svg a[href].active.channel-3 path {
-  fill: var(--bach-gold) !important;
-  filter: drop-shadow(0 0 5px var(--bach-gold)) drop-shadow(0 0 10px var(--bach-gold));
+  fill: var(--voice-3-color) !important;
+  filter: drop-shadow(0 0 5px var(--voice-3-color)) drop-shadow(0 0 10px var(--voice-3-color));
 }
 
 body.playing #svg-container>svg a[href].active.channel-4 path {
-  fill: mediumpurple !important;
-  filter: drop-shadow(0 0 5px mediumpurple) drop-shadow(0 0 10px mediumpurple);
+  fill: var(--voice-4-color) !important;
+  filter: drop-shadow(0 0 5px var(--voice-4-color)) drop-shadow(0 0 10px var(--voice-4-color));
 }
 
 body.playing #svg-container>svg a[href].active.channel-5 path {
-  fill: lightpink !important;
-  filter: drop-shadow(0 0 5px lightpink) drop-shadow(0 0 10px lightpink);
+  fill: var(--voice-5-color) !important;
+  filter: drop-shadow(0 0 5px var(--voice-5-color)) drop-shadow(0 0 10px var(--voice-5-color));
 }
 
 /* Hide scroll-to-top button when playing or already at optimal position */
