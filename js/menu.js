@@ -24,7 +24,7 @@ class BWVNavigationMenu {
 
   async loadAvailableWorks() {
     try {
-      console.log('📚 Loading BWV list from bwvs.json...');
+      // console.log('📚 Loading BWV list from bwvs.json...');
       const response = await fetch('bwvs.json');
       
       if (!response.ok) {
@@ -35,8 +35,8 @@ class BWVNavigationMenu {
       
       if (bwvsData.bwvs && Array.isArray(bwvsData.bwvs) && bwvsData.bwvs.length > 0) {
         this.availableWorks = bwvsData.bwvs.sort(); // Sort alphabetically
-        console.log(`✅ Loaded ${this.availableWorks.length} BWV works:`, this.availableWorks);
-        console.log(`📅 Generated: ${bwvsData.generated}`);
+        // console.log(`✅ Loaded ${this.availableWorks.length} BWV works:`, this.availableWorks);
+        // console.log(`📅 Generated: ${bwvsData.generated}`);
       } else {
         throw new Error('Invalid bwvs.json format or empty BWV list');
       }

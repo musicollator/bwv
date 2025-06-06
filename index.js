@@ -8,38 +8,27 @@ import { initializeLilyPondTiming, createLilyPondGetCurrentBar, getLilyPondTimin
 function processWerkParameter() {
   const urlParams = new URLSearchParams(window.location.search);
   const werkParam = urlParams.get('werk');
-
-  // Default fallback
   const defaultWorkId = 'bwv1006';
 
   if (!werkParam) {
-    console.log('No werk parameter found, using default:', defaultWorkId);
     return defaultWorkId;
   }
 
-  // Validation pattern: either digits only OR 'test' followed by non-digit/non-space characters
   const werkPattern = /^(?:\d+|test[^\d\s]*)$/;
 
   if (!werkPattern.test(werkParam)) {
-    console.warn(`Invalid werk parameter format: "${werkParam}". Expected digits only or 'test' followed by non-digit/non-space characters. Using default:`, defaultWorkId);
+    console.warn(`Invalid werk parameter: "${werkParam}". Using default: ${defaultWorkId}`);
     return defaultWorkId;
   }
 
-  // If it's only digits, prefix with 'bwv'
   if (/^\d+$/.test(werkParam)) {
-    const workId = `bwv${werkParam}`;
-    console.log(`Digits-only werk parameter "${werkParam}" converted to:`, workId);
-    return workId;
+    return `bwv${werkParam}`;
   }
 
-  // If it starts with 'test' and matches pattern, use as-is
   if (/^test[^\d\s]*$/.test(werkParam)) {
-    console.log(`Test werk parameter used as-is:`, werkParam);
     return werkParam;
   }
 
-  // Fallback (shouldn't reach here due to regex validation above)
-  console.warn(`Unexpected werk parameter: "${werkParam}". Using default:`, defaultWorkId);
   return defaultWorkId;
 }
 
@@ -52,14 +41,11 @@ class MeasureHighlighter {
     this.structures = new Map();
   }
 
-  // Add a highlighting structure (e.g., harmonic, thematic, etc.)
   addStructure(name, config) {
     this.structures.set(name, config);
   }
 
-  // Apply a specific structure
   applyStructure(structureName) {
-    // Clear existing highlights
     this.clearHighlights();
 
     const structure = this.structures.get(structureName);
@@ -68,9 +54,7 @@ class MeasureHighlighter {
       return;
     }
 
-    // Find all elements with data-bar attributes
     const barElements = document.querySelectorAll('[data-bar]');
-
     barElements.forEach(element => {
       const barNumber = parseInt(element.getAttribute('data-bar'));
       const style = this.getStyleForBar(barNumber, structure);
@@ -81,7 +65,6 @@ class MeasureHighlighter {
     });
   }
 
-  // Determine style for a specific bar based on structure
   getStyleForBar(barNumber, structure) {
     if (structure.type === 'alternating') {
       const colorIndex = (barNumber - 1) % structure.colors.length;
@@ -115,28 +98,20 @@ class MeasureHighlighter {
     return null;
   }
 
-  // Evaluate conditional logic from YAML configuration
   evaluateCondition(barNumber, condition) {
     switch (condition.type) {
       case 'line-starts':
-        // Bars in the list get index 0, others get index 1
         return condition.bars.includes(barNumber) ? 0 : 1;
-
       case 'modulo':
-        // Every nth bar gets index 0, others get index 1
         return (barNumber % condition.divisor === condition.remainder) ? 0 : 1;
-
       case 'specific-bars':
-        // Specific bars get index 1, others get default_index (usually 0)
         return condition.bars.includes(barNumber) ? 1 : (condition.default_index || 0);
-
       default:
         console.warn(`Unknown condition type: ${condition.type}`);
         return 0;
     }
   }
 
-  // Clear all highlights
   clearHighlights() {
     const barElements = document.querySelectorAll('[data-bar]');
     barElements.forEach(element => {
@@ -145,12 +120,10 @@ class MeasureHighlighter {
     });
   }
 
-  // Get all available structures
   getStructureNames() {
     return Array.from(this.structures.keys());
   }
 
-  // Get structure display name
   getStructureDisplayName(structureName) {
     const structure = this.structures.get(structureName);
     return structure?.name || structureName.charAt(0).toUpperCase() + structureName.slice(1).replace('-', ' ');
@@ -163,17 +136,12 @@ let measureHighlighter = null;
 function initializeMeasureHighlighter() {
   measureHighlighter = new MeasureHighlighter();
 
-  // Load structures from configuration if available
   if (CONFIG?.measureHighlighters) {
     Object.entries(CONFIG.measureHighlighters).forEach(([key, config]) => {
       measureHighlighter.addStructure(key, config);
     });
-    console.log(`Loaded ${Object.keys(CONFIG.measureHighlighters).length} measure highlighter structures from configuration`);
-  } else {
-    console.log('No measure highlighters defined in configuration');
   }
 
-  // Update UI based on available structures
   updateMeasureControlsVisibility();
 }
 
@@ -186,14 +154,9 @@ function updateMeasureControlsVisibility() {
   const structureNames = measureHighlighter.getStructureNames();
 
   if (structureNames.length === 0) {
-    // No highlighters available - hide the controls
     measureControls.style.display = 'none';
-    console.log('No measure highlighters defined in configuration - hiding controls');
     return;
   }
-
-  // Show the controls
-  // measureControls.style.display = 'block';
 
   // Clear existing options except "None"
   while (select.children.length > 1) {
@@ -209,17 +172,11 @@ function updateMeasureControlsVisibility() {
   });
 
   if (structureNames.length === 1) {
-    // Only one highlighter - disable choice, auto-select it
     select.disabled = true;
     select.value = structureNames[0];
     measureHighlighter.applyStructure(structureNames[0]);
-
-    console.log(`Only one measure highlighter available: ${structureNames[0]} - auto-applied`);
   } else {
-    // Multiple highlighters - enable choice
     select.disabled = false;
-
-    console.log(`${structureNames.length} measure highlighters available - enabling choice`);
   }
 
   // Add event listener if not already added
@@ -227,10 +184,8 @@ function updateMeasureControlsVisibility() {
     select.addEventListener('change', (e) => {
       if (e.target.value && measureHighlighter) {
         measureHighlighter.applyStructure(e.target.value);
-        console.log(`Applied measure highlighter: ${e.target.value}`);
       } else if (measureHighlighter) {
         measureHighlighter.clearHighlights();
-        console.log('Cleared all measure highlights');
       }
     });
     select.setAttribute('data-listener-added', 'true');
@@ -241,69 +196,48 @@ function updateMeasureControlsVisibility() {
 // CONFIGURATION SYSTEM
 // =============================================================================
 
-let CONFIG = null; // Will be loaded from JSON
+let CONFIG = null;
 
 async function loadConfiguration() {
   try {
-    // Get work ID using new werk parameter processing
     const workId = processWerkParameter();
-
-    // Load YAML configuration file from work exports directory
     const configResponse = await fetch(`${workId}/exports/${workId}.config.yaml`);
+    
     if (!configResponse.ok) {
       throw new Error(`Failed to load configuration for ${workId}`);
     }
 
     const yamlText = await configResponse.text();
-
-    // Parse YAML using js-yaml library
     CONFIG = jsyaml.load(yamlText);
 
-    // Massage file paths to include work directory structure
+    // Massage file paths
     CONFIG.files.svgPath = `${workId}/exports/${CONFIG.files.svgPath}`;
     CONFIG.files.notesPath = `${workId}/exports/${CONFIG.files.notesPath}`;
     CONFIG.files.audioPath = `${workId}/exports/${CONFIG.files.audioPath}`;
 
-    console.log('Loaded configuration:', CONFIG);
-
-    // Apply configuration to UI
     applyConfiguration();
-
     return CONFIG;
   } catch (error) {
     console.error('Configuration loading error:', error);
-    // Fallback to default if config fails
     showConfigurationError(error.message);
     throw error;
   }
 }
 
 function applyConfiguration() {
-
-  // Apply mobile timing adjustment FIRST
   CONFIG = applyMobileTimingAdjustment(CONFIG);
 
-  // Update page title and meta
   document.title = CONFIG.workInfo.title;
   document.getElementById('page-title').textContent = CONFIG.workInfo.title;
-
-  // Update total bars display
   document.getElementById('total_bars').textContent = CONFIG.musicalStructure.totalBars;
 
-  // Update audio source
   const audioSource = document.getElementById('audio-source');
   audioSource.src = CONFIG.files.audioPath;
-  audio.load(); // Reload audio with new source
+  audio.load();
 
-  // Update Wikipedia link
   const wikiButton = document.getElementById('button_wikipedia');
   wikiButton.href = CONFIG.workInfo.externalURL;
   wikiButton.title = `Wikipedia: ${CONFIG.workInfo.fullTitle}`;
-}
-
-function generateChannelCSS() {
-  // Channel colors are now hard-coded in CSS
-  // This function is kept for potential future use
 }
 
 function showConfigurationError(message) {
@@ -324,28 +258,26 @@ function showConfigurationError(message) {
 
 const audio = document.getElementById("audio");
 let notes = [], remainingNotes = [], offCandidateNotes = [];
-let convertedNotes = []; // Converted notes stored once after loading
+let convertedNotes = [];
 let svgGlobal, noteDataGlobal, bodyGlobal, headerElementGlobal, footerElementGlobal, currentBarGlobal;
 let isPlaying = false;
 let currentVisibleBar = -1;
-let HEADER_HEIGHT = 120; // Will be updated from config
-let maxTick = 0; // Calculated from note data
+let HEADER_HEIGHT = 120;
+let maxTick = 0;
 
 // LilyPond timing integration
 let lilyPondGetCurrentBar = null;
 
 // =============================================================================
-// MIDI TIMING CONVERSION (simple rule of three)
+// MIDI TIMING CONVERSION
 // =============================================================================
 
 function tickToSeconds(tick) {
   if (maxTick === 0) return 0;
-  // Simple linear mapping: (tick position / total ticks) * total duration
   return (tick / maxTick) * CONFIG.musicalStructure.totalDurationSeconds;
 }
 
 function convertNoteTiming(note) {
-  // Handle tick format only
   if (note.on_tick !== undefined && note.off_tick !== undefined) {
     return {
       ...note,
@@ -353,7 +285,6 @@ function convertNoteTiming(note) {
       off: tickToSeconds(note.off_tick)
     };
   }
-  // If already in seconds format (shouldn't happen but handle gracefully)
   return note;
 }
 
@@ -362,12 +293,10 @@ function convertNoteTiming(note) {
 // =============================================================================
 
 function getCurrentBar(currentTime) {
-  // Use LilyPond timing if available, otherwise fall back to equal division
   if (lilyPondGetCurrentBar) {
     return lilyPondGetCurrentBar(currentTime);
   }
 
-  // Simple fallback calculation
   const secondsPerBar = CONFIG.musicalStructure.totalDurationSeconds / CONFIG.musicalStructure.totalBars;
   const barNumber = Math.floor(currentTime / secondsPerBar) + 1;
   return Math.max(1, Math.min(CONFIG.musicalStructure.totalBars, barNumber));
@@ -483,30 +412,22 @@ function unhighlightAllNotes() {
 }
 
 // =============================================================================
-// NOTE DATA CONVERSION (called once after loading JSON)
+// NOTE DATA CONVERSION
 // =============================================================================
 
 function convertNotesFromTicks() {
-  // Calculate max tick from note data (rule of three conversion)
   maxTick = Math.max(...noteDataGlobal.map(note =>
     Math.max(note.on_tick || 0, note.off_tick || 0)
   ));
 
-  console.log(`Calculated max_tick: ${maxTick} ticks`);
-  console.log(`Target duration: ${CONFIG.musicalStructure.totalDurationSeconds} seconds`);
-
-  // Convert notes from tick format to runtime format (ONCE)
   convertedNotes = noteDataGlobal.map(rawNote => {
-    // Convert timing using simple rule of three
     const note = convertNoteTiming(rawNote);
 
-    // Find SVG elements for this note using hrefs
     const elements = note.hrefs.map(href => {
       const selector = `a[href$="${href}"]`;
       return svgGlobal.querySelector(selector);
     }).filter(Boolean);
 
-    // Add channel-specific CSS classes for visual styling
     elements.forEach(el => {
       el.classList.add(`channel-${note.channel}`);
     });
@@ -520,27 +441,15 @@ function convertNotesFromTicks() {
     };
   });
 
-  // Sort notes by onset time for efficient processing
   convertedNotes.sort((a, b) => a.on - b.on);
-
-  console.log(`Converted ${convertedNotes.length} notes from ticks to seconds`);
-  console.log(`Tick range: 0 to ${maxTick} ticks`);
-  console.log(`Converted time range: 0 to ${Math.max(...convertedNotes.map(n => n.off)).toFixed(2)} seconds`);
 }
 
-// =============================================================================
-// NOTE DATA INITIALIZATION (called for resets)
-// =============================================================================
-
 function initializeNotes() {
-  // Use pre-converted notes (no re-conversion needed)
   notes = [...convertedNotes];
   remainingNotes = [...notes];
   offCandidateNotes = [];
   unhighlightAllNotes();
   hideAllBars();
-
-  console.log(`Initialized ${notes.length} notes for playback synchronization`);
 }
 
 // =============================================================================
@@ -556,7 +465,6 @@ function positionButtons() {
   buttons.forEach(button => {
     const bRect = button.getBoundingClientRect()
     button.style.right = `${Math.ceil(Math.max(0, window.innerWidth - svgRect.right - (bRect.right - bRect.left)))}px`;
-    // console.log(button, window.innerWidth - svgRect.right, bRect.right - bRect.left, '=',  button.style.right)
   });
 }
 
@@ -580,12 +488,9 @@ const debouncedPositionButtons = debounce(positionButtons, 50);
 const debouncedCheckScroll = debounce(checkScrollButtonVisibility, 50);
 
 // =============================================================================
-// SIMPLE MOBILE DETECTION AND TIMING ADJUSTMENT
+// MOBILE DETECTION AND TIMING ADJUSTMENT
 // =============================================================================
 
-/**
- * Simple mobile device detection - returns true if mobile, false if desktop
- */
 function isMobileDevice() {
   const userAgent = navigator.userAgent.toLowerCase();
   const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos'];
@@ -596,26 +501,15 @@ function isMobileDevice() {
   return hasMobileUA || (hasTouch && smallScreen);
 }
 
-/**
- * Apply mobile timing adjustment to configuration
- */
 function applyMobileTimingAdjustment(config) {
   const isMobile = isMobileDevice();
-
-  // Provide default if missing or undefined
-  const originalLeadTime = config.musicalStructure.visualLeadTimeSeconds ?? 0.0; // Default 00ms
+  const originalLeadTime = config.musicalStructure.visualLeadTimeSeconds ?? 0.0;
 
   if (isMobile) {
-    // Add extra lead time for mobile devices (adjust this value as needed)
     const mobileAdjustment = 0.2; // 200ms additional lead time for mobile
     config.musicalStructure.visualLeadTimeSeconds = originalLeadTime + mobileAdjustment;
-
-    console.log(`📱 Mobile device detected - applying +${mobileAdjustment}s timing adjustment`);
-    console.log(`   Lead time: ${originalLeadTime.toFixed(3)}s → ${config.musicalStructure.visualLeadTimeSeconds.toFixed(3)}s`);
   } else {
-    // Ensure the property exists even for desktop
     config.musicalStructure.visualLeadTimeSeconds = originalLeadTime;
-    console.log(`🖥️  Desktop device - using original timing: ${originalLeadTime.toFixed(3)}s`);
   }
 
   return config;
@@ -642,12 +536,12 @@ function syncLoop() {
   offCandidateNotes = offCandidateNotes.filter(note => {
     if (note.off <= visualTime) {
       unhighlightNote(note);
-      return false; // Remove from array
+      return false;
     }
-    return true; // Keep in array
+    return true;
   });
 
-  // Update bar highlighting with smooth transitions
+  // Update bar highlighting
   const currentBar = getCurrentBar(visualTime);
   if (currentBar !== currentVisibleBar) {
     hideAllBars();
@@ -664,10 +558,8 @@ function syncLoop() {
 
 async function setup() {
   try {
-    // First load configuration
     await loadConfiguration();
 
-    // Then load work-specific files
     const [svgText, noteData] = await Promise.all([
       fetch(CONFIG.files.svgPath).then(r => {
         if (!r.ok) throw new Error(`Failed to load SVG: ${CONFIG.files.svgPath}`);
@@ -690,13 +582,12 @@ async function setup() {
     footerElementGlobal = document.getElementById('footer');
     footerElementGlobal.style.visibility = "visible";
     currentBarGlobal = document.getElementById('current_bar');
-    HEADER_HEIGHT = 120; // Hard-coded header height
+    HEADER_HEIGHT = 120;
 
     if (!svgGlobal) {
       throw new Error("SVG element not found in loaded content");
     }
 
-    // Convert notes from ticks to seconds (ONCE)
     convertNotesFromTicks();
 
     // Initialize LilyPond timing system
@@ -717,32 +608,16 @@ async function setup() {
       lilyPondGetCurrentBar = createLilyPondGetCurrentBar();
     }
 
-    // Initialize components
     initializeNotes();
     initEventHandlers();
-
-    // Initialize measure highlighting after SVG is loaded and CONFIG is available
     initializeMeasureHighlighter();
 
-    console.log(`Loaded ${notes.length} notes for ${CONFIG.workInfo.title}`);
-    console.log(`Musical structure: ${CONFIG.musicalStructure.totalBars} bars in ${CONFIG.musicalStructure.totalDurationSeconds}s`);
-
-    // Log timing system status
+    // Essential info only
+    console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${notes.length} notes, ${CONFIG.musicalStructure.totalBars} bars`);
+    
     const timingInfo = getLilyPondTimingInfo();
     if (timingInfo.isActive) {
-      console.log('✅ Using LilyPond-calibrated bar timing');
-    } else {
-      console.log('⚠️ Using equal-division bar timing (fallback)');
-    }
-
-    // Log timing format detection
-    if (noteDataGlobal.length > 0) {
-      const sampleNote = noteDataGlobal[0];
-      if (sampleNote.on_tick !== undefined) {
-        console.log('Detected tick timing format - using rule of three conversion');
-      } else {
-        console.log('Detected seconds timing format');
-      }
+      console.log('✅ LilyPond timing active');
     }
 
   } catch (err) {
@@ -751,7 +626,6 @@ async function setup() {
     return;
   }
 
-  // Hide loading spinner
   document.getElementById("loading")?.classList.add("d-none");
   checkScrollButtonVisibility();
 }
@@ -761,17 +635,14 @@ async function setup() {
 // =============================================================================
 
 function initEventHandlers() {
-  // Initialize UI
   positionButtons();
   document.querySelectorAll('#button_wikipedia, #button_scroll_to_top, #bar_spy').forEach(button => {
     button.style.visibility = 'visible';
   });
 
-  // Window events
   window.addEventListener('resize', debouncedPositionButtons);
   window.addEventListener('scroll', debouncedCheckScroll);
 
-  // Audio events
   audio.addEventListener("play", () => {
     isPlaying = true;
     setPlayingState(true);
@@ -791,7 +662,6 @@ function initEventHandlers() {
     currentVisibleBar = -1;
   });
 
-  // Seeking events with improved responsiveness
   let seekingTimeout;
   function handleSeek() {
     if (!CONFIG) return;
@@ -799,15 +669,12 @@ function initEventHandlers() {
     const now = audio.currentTime;
     const visualTime = now + CONFIG.musicalStructure.visualLeadTimeSeconds;
 
-    // Reset note states based on current position
     remainingNotes = notes.filter(note => note.on > visualTime);
     offCandidateNotes = notes.filter(note => note.on <= visualTime && note.off > visualTime);
 
-    // Update visual highlighting
     unhighlightAllNotes();
     offCandidateNotes.forEach(note => highlightNote(note));
 
-    // Update bar highlighting
     const currentBar = getCurrentBar(visualTime);
     hideAllBars();
     showBar(currentBar);
@@ -834,5 +701,4 @@ function initEventHandlers() {
 // APPLICATION STARTUP
 // =============================================================================
 
-// Start the application
 setup();

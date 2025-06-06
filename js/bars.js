@@ -15,7 +15,7 @@ class LilyPondTimingSystem {
     // Get ALL bar elements, not just those with timing data
     const allBarElements = document.querySelectorAll('[data-bar]');
     if (allBarElements.length === 0) {
-      console.log('No LilyPond bar data found in SVG');
+      // console.log('No LilyPond bar data found in SVG');
       return null;
     }
 
@@ -60,7 +60,7 @@ class LilyPondTimingSystem {
       // Insert pickup bar at the beginning
       timingData.unshift(pickupBar);
       
-      console.log(`Pickup bar detected: Bar ${pickupBar.bar}, duration: ${firstRegularMoment} moments`);
+      // console.log(`Pickup bar detected: Bar ${pickupBar.bar}, duration: ${firstRegularMoment} moments`);
     }
 
     // Remove duplicates (shouldn't happen, but safety check)
@@ -73,7 +73,7 @@ class LilyPondTimingSystem {
       }
     });
 
-    console.log('Extracted LilyPond timings (with anacrusis support):', uniqueTimings);
+    // console.log('Extracted LilyPond timings (with anacrusis support):', uniqueTimings);
     return uniqueTimings;
   }
 
@@ -102,21 +102,13 @@ class LilyPondTimingSystem {
     // Determine last bar duration from config
     let lastBarDuration = 1.0; // Default: assume 4/4 time (1 whole note)
     
-    console.log('=== Config Debug ===');
-    console.log('config:', config);
-    console.log('config?.musicalStructure:', config?.musicalStructure);
-    console.log('config?.musicalStructure?.lastBarDuration:', config?.musicalStructure?.lastBarDuration);
-    
     if (config && config.musicalStructure && config.musicalStructure.lastBarDuration !== undefined) {
       lastBarDuration = this.parseFraction(config.musicalStructure.lastBarDuration.toString());
-      console.log(`✓ Using config lastBarDuration: ${config.musicalStructure.lastBarDuration} = ${lastBarDuration} whole notes`);
     } else {
-      console.log(`⚠ No config provided or lastBarDuration missing - assuming last bar is complete (${lastBarDuration} whole notes)`);
       if (!config) console.log('  → config is null/undefined');
       if (config && !config.musicalStructure) console.log('  → config.musicalStructure is missing');
       if (config && config.musicalStructure && config.musicalStructure.lastBarDuration === undefined) console.log('  → config.musicalStructure.lastBarDuration is missing');
     }
-    console.log('===================');
     
     // Calculate actual musical end: last bar start + last bar duration
     const musicalEndMoment = lastBarStartMoment + lastBarDuration;
@@ -124,13 +116,6 @@ class LilyPondTimingSystem {
 
     // Calibration
     const secondsPerMomentUnit = musicalDurationSeconds / totalMusicalSpan;
-
-    console.log('=== LilyPond Calibration (Corrected) ===');
-    console.log(`MIDI: ${musicalDurationSeconds.toFixed(3)}s`);
-    console.log(`Last bar starts at: ${lastBarStartMoment} whole notes`);
-    console.log(`Last bar duration: ${lastBarDuration} whole notes`);
-    console.log(`Musical span: ${minMoment} to ${musicalEndMoment} = ${totalMusicalSpan} whole notes`);
-    console.log(`Tempo: ${secondsPerMomentUnit.toFixed(4)}s per whole note`);
 
     // Convert all moments to absolute seconds
     const barTimings = lilypondTimings.map(timing => ({
@@ -150,11 +135,6 @@ class LilyPondTimingSystem {
       hasPostMusicSilence: totalDurationSeconds - musicEndSeconds > 0.5,
       hasPickupBar: lilypondTimings.some(t => t.isPickup)
     };
-
-    console.log('Bar timings:', barTimings.map(t => 
-      `Bar ${t.bar}${t.isPickup ? ' (pickup)' : ''}: ${t.seconds.toFixed(3)}s (moment ${t.moment})`
-    ));
-    console.log('=======================================');
 
     this.timingData = result;
     return result;
