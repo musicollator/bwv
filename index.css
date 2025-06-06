@@ -234,8 +234,3 @@ footer#footer {
   border: 1px solid var(--bach-taupe);
   color: var(--bach-dark);
 }
-
-/* Target the specific path structure */
-#svg-container>svg a path[fill="none"][stroke="none"] {
-  display: none !important;
-}
