@@ -12,3 +12,6 @@
 [submodule "bwv659"]
 	path = bwv659
 	url = https://github.com/musicollator/bwv659.git
+[submodule "bwv639"]
+	path = bwv639
+	url = https://github.com/musicollator/bwv639.git
