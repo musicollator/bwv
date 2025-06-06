@@ -601,7 +601,9 @@ function isMobileDevice() {
  */
 function applyMobileTimingAdjustment(config) {
   const isMobile = isMobileDevice();
-  const originalLeadTime = config.musicalStructure.visualLeadTimeSeconds;
+
+  // Provide default if missing or undefined
+  const originalLeadTime = config.musicalStructure.visualLeadTimeSeconds ?? 0.0; // Default 00ms
 
   if (isMobile) {
     // Add extra lead time for mobile devices (adjust this value as needed)
@@ -611,6 +613,8 @@ function applyMobileTimingAdjustment(config) {
     console.log(`📱 Mobile device detected - applying +${mobileAdjustment}s timing adjustment`);
     console.log(`   Lead time: ${originalLeadTime.toFixed(3)}s → ${config.musicalStructure.visualLeadTimeSeconds.toFixed(3)}s`);
   } else {
+    // Ensure the property exists even for desktop
+    config.musicalStructure.visualLeadTimeSeconds = originalLeadTime;
     console.log(`🖥️  Desktop device - using original timing: ${originalLeadTime.toFixed(3)}s`);
   }
 
@@ -705,7 +709,8 @@ async function setup() {
     const lilyPondActive = initializeLilyPondTiming(
       convertedNotes,
       CONFIG.musicalStructure.totalDurationSeconds,
-      originalGetCurrentBar
+      originalGetCurrentBar,
+      CONFIG
     );
 
     if (lilyPondActive) {
