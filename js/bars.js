@@ -15,7 +15,7 @@ class LilyPondTimingSystem {
     // Get ALL bar elements, not just those with timing data
     const allBarElements = document.querySelectorAll('[data-bar]');
     if (allBarElements.length === 0) {
-      // console.log('No LilyPond bar data found in SVG');
+      console.log('No LilyPond bar data found in SVG');
       return null;
     }
 
@@ -78,7 +78,7 @@ class LilyPondTimingSystem {
   }
 
   /**
-   * Calibrate LilyPond moments to real-time seconds using MIDI data (corrected understanding)
+   * Calibrate LilyPond moments to real-time seconds using MIDI data
    */
   calibrate(convertedNotes, totalDurationSeconds, config = null) {
     const lilypondTimings = this.extractTimings();
