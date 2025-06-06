@@ -29,12 +29,12 @@
 
 <body>
   <!-- Sticky header with BWV navigation and audio controls -->
-  <div class="sticky-top bg-light shadow-sm border-bottom">
+  <div class="sticky-top bg-light shadow-sm border-bottom" style="background-color: var(--bach-cream) !important;">
     <!-- BWV Navigation Bar -->
 
     <!-- Header with title and audio controls -->
     <div id="header" class="py-2 container text-center">
-      <div id="bwv-navigation" class="py-1">
+      <div id="bwv-navigation" class="py-2" style="background-color: transparent;">
         <div id="bwv-buttons-container" class="d-flex justify-content-center gap-2">
           <!-- BWV navigation buttons will be dynamically inserted here -->
           <div id="bwv-loading" class="text-muted small">Loading BWV navigation...</div>
@@ -42,7 +42,7 @@
       </div>
       <div class="d-flex align-items-center justify-content-center position-relative  gap-2">
         <!-- Main audio player -->
-        <audio id="audio" class="flex-grow-1" style="max-width: 800px;" controls>
+        <audio id="audio" class="flex-grow-1 my-1" style="max-width: 52rem; max-height: 2rem;" controls>
           <source id="audio-source" src="" type="audio/wav">
           Your browser does not support the audio element.
         </audio>
@@ -83,14 +83,14 @@
   <!-- Wikipedia link button - positioned dynamically by JavaScript -->
   <a id="button_wikipedia" type="button" href="#" target="_blank" rel="noopener noreferrer"
     class="btn btn-outline-light btn-sm d-inline-flex align-items-center justify-content-center position-fixed rounded-circle" title="wikipedia"
-    style="top: 20px; right: 0; visibility: hidden; width: 28px; height: 28px; border: 1px solid gray; z-index: 1040;">
+    style="top: 20px; right: 0; visibility: hidden; width: 28px; height: 28px; border: 1px solid var(--bach-taupe); z-index: 1040; background-color: var(--bach-cream);">
     <img src="media/Wikipedia's_W.svg" width="30" height="30" alt="Wikipedia"
       style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
   </a>
 
   <!-- Scroll-to-top button - auto-hides when not needed -->
   <a id="button_scroll_to_top" type="button" class="btn btn-outline-light btn-sm d-inline-flex align-items-center justify-content-center position-fixed"
-    style="bottom: 40px; right: 0; visibility: hidden; width: 28px; height: 28px; border: 1px solid gray; z-index: 1040;" title="scroll_to_top"
+    style="bottom: 40px; right: 0; visibility: hidden; width: 28px; height: 28px; border: 1px solid var(--bach-taupe); z-index: 1040; background-color: var(--bach-cream);" title="scroll_to_top"
     onclick="document.getElementById('svg-container').scrollIntoView({ behavior: 'smooth', block: 'start'}); return false;">
     <img src="media/up-arrow-svgrepo-com.svg" width="16" height="16" alt="scroll_up"
       style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
@@ -105,7 +105,7 @@
   </footer>
 
   <!-- Load menu.js before index.js -->
-  <script type="module" src="menu.js"></script>
+  <script type="module" src="js/menu.js"></script>
   <script type="module" src="index.js"></script>
 
   <!-- PWA Service Worker Registration -->

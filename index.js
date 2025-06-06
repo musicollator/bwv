@@ -1,5 +1,5 @@
 // Import LilyPond timing system
-import { initializeLilyPondTiming, createLilyPondGetCurrentBar, getLilyPondTimingInfo } from './bars.js';
+import { initializeLilyPondTiming, createLilyPondGetCurrentBar, getLilyPondTimingInfo } from '/js/bars.js';
 
 // =============================================================================
 // WERK PARAMETER PROCESSING

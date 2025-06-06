@@ -110,8 +110,7 @@ jobs:
         cp index.html deploy/
         cp index.css deploy/
         cp index.js deploy/
-        cp bars.js deploy/
-        cp menu.js deploy/
+        cp -r js deploy/
         cp bwvs.json deploy/
         cp -r media deploy/
         for sub in ${{ steps.discover.outputs.BWV_LIST }}; do

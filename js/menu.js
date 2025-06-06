@@ -73,7 +73,7 @@ class BWVNavigationMenu {
     // Create buttons for each available work
     this.availableWorks.forEach(workId => {
       const button = document.createElement('button');
-      button.className = 'btn btn-sm btn-outline-secondary';
+      button.className = 'btn btn-sm btn-outline-dark';
       button.type = 'button';
       button.setAttribute('data-work-id', workId);
       
@@ -112,15 +112,15 @@ class BWVNavigationMenu {
   updateActiveState() {
     // Remove active styling from all buttons
     document.querySelectorAll('[data-work-id]').forEach(btn => {
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-outline-secondary');
+      btn.classList.remove('btn-warning');
+      btn.classList.add('btn-outline-dark');
     });
     
     // Add active styling to current work
     const activeBtn = document.querySelector(`[data-work-id="${this.currentWorkId}"]`);
     if (activeBtn) {
-      activeBtn.classList.remove('btn-outline-secondary');
-      activeBtn.classList.add('btn-primary');
+      activeBtn.classList.remove('btn-outline-dark');
+      activeBtn.classList.add('btn-warning');
     }
   }
 

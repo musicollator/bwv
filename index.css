@@ -1,6 +1,12 @@
 :root {
   --header-height: 120px;
-  /* Will be updated from config */
+  
+  /* 🎼 Bach Color Palette - Easy to modify! */
+  --bach-cream: #faf8f3;        /* Primary background */
+  --bach-taupe: #d4c4a8;        /* Secondary/controls */
+  --bach-brown: #8b6f47;        /* Active/selected */
+  --bach-dark: #5a4037;         /* Text/borders */
+  --bach-gold: #c8a882;         /* Special accent */
 }
 
 /* SVG container positioning and scroll behavior */
@@ -16,7 +22,7 @@
 }
 
 #svg-container>svg a[href] {
-  color: black;
+  color: var(--bach-dark);
 }
 
 /* Note highlighting transitions - slow fade out for smooth visual */
@@ -46,7 +52,7 @@ body:not(.playing) #svg-container>svg rect[data-bar] {
 }
 
 body.seeking #svg-container>svg rect[data-bar] {
-  filter: blur(1rem) drop-shadow(0 0 0.2rem black);
+  filter: blur(1rem) drop-shadow(0 0 0.2rem var(--bach-dark));
 }
 
 /* Channel-specific colors for different instrument parts */
@@ -66,8 +72,8 @@ body.playing #svg-container>svg a[href].active.channel-2 path {
 }
 
 body.playing #svg-container>svg a[href].active.channel-3 path {
-  fill: gold !important;
-  filter: drop-shadow(0 0 5px gold) drop-shadow(0 0 10px gold);
+  fill: var(--bach-gold) !important;
+  filter: drop-shadow(0 0 5px var(--bach-gold)) drop-shadow(0 0 10px var(--bach-gold));
 }
 
 body.playing #svg-container>svg a[href].active.channel-4 path {
@@ -87,15 +93,15 @@ body.svg-at-top #button_scroll_to_top {
 }
 
 #bar_spy {
-  background-color: lightgray !important;
-  color: black !important;
+  background-color: var(--bach-taupe) !important;
+  color: var(--bach-dark) !important;
   font-weight: normal;
   font-size: .8rem;
   transition: filter 1s ease, width 1s ease;
 }
 
 body.seeking #bar_spy {
-  filter: drop-shadow(0 0 0.2rem black);
+  filter: drop-shadow(0 0 0.2rem var(--bach-dark));
   transition: filter .1s ease, width .1s ease;
 }
 
@@ -114,14 +120,15 @@ footer#footer {
 #measure-controls {
   margin: 10px 0;
   padding: 10px;
-  background-color: #f8f9fa;
+  background-color: var(--bach-cream);
   border-radius: 5px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bach-taupe);
 }
 
 #measure-controls label {
   font-weight: 500;
   margin-right: 10px;
+  color: var(--bach-dark);
 }
 
 #measure-controls select {
@@ -129,6 +136,9 @@ footer#footer {
   min-width: 120px;
   display: inline-block;
   margin-left: 8px;
+  background-color: var(--bach-cream);
+  border-color: var(--bach-taupe);
+  color: var(--bach-dark);
 }
 
 /* Hide dropdown arrow when disabled (single option) */
@@ -142,7 +152,19 @@ footer#footer {
 
 /* BWV Navigation - minimal custom styles (Bootstrap handles most of it) */
 #bwv-navigation {
-  background: rgba(248, 249, 250, 0.9);
+  background: rgba(250, 248, 243, 0.9);
+}
+
+#bwv-navigation .btn-warning {
+  background-color: var(--bach-gold);
+  border-color: var(--bach-brown);
+  color: var(--bach-dark);
+}
+
+#bwv-navigation .btn-warning:hover {
+  background-color: var(--bach-brown);
+  border-color: var(--bach-brown);
+  color: white;
 }
 
 /* Transition loading overlay */
@@ -152,7 +174,7 @@ footer#footer {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(250, 248, 243, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -163,7 +185,9 @@ footer#footer {
 .bwv-transition-content {
   text-align: center;
   padding: 2rem;
-  background: white;
+  background: var(--bach-cream);
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--bach-taupe);
+  color: var(--bach-dark);
 }
