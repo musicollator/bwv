@@ -18,3 +18,6 @@
 	path = bwv639
 	url = https://github.com/musicollator/bwv639.git
 	branch = main
+[submodule "bwv-siegel"]
+	path = bwv-siegel
+	url = https://github.com/musicollator/bwv-siegel.git
