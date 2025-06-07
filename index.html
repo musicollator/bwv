@@ -48,10 +48,18 @@
 
   <!-- Add missing main-content wrapper -->
   <div class="main-content" style="position: relative;">
-    <!-- BWV Siegel loading animation - covers entire main-content area -->
-    <div id="loading" style="position: fixed; top: var(--header-height); left: 0; right: 0; bottom: 0; z-index: 1000; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;">
-      <div style="width: min(60vw, 60vh); height: min(60vw, 60vh); border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-        <bwv-siegel quantization="12" svg-path="bwv-siegel/exports/siegel.svg" freeze-duration="400" style="width: 100%; height: 100%;"></bwv-siegel>
+
+    <!-- Bootstrap loading animation in elegant circular container -->
+    <div id="loading"
+      style="position: fixed; top: var(--header-height); left: 0; right: 0; bottom: 0; z-index: 1000; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;">
+      <div
+        style="width: min(60vw, 60vh); height: min(60vw, 60vh); border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 2px solid #8B4513; background: radial-gradient(circle, #f8f9fa 30%, #e9ecef 100%); box-shadow: 0 8px 32px rgba(139, 69, 19, 0.3);">
+        <div class="text-center">
+          <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem; color: #8B4513 !important;" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <div class="text-muted">Loading BWV...</div>
+        </div>
       </div>
     </div>
 
@@ -96,9 +104,6 @@
     </div>
   </footer>
 
-  <!-- Load BWV Siegel Web Component -->
-  <script type="module" src="bwv-siegel/exports/bwv-siegel.js"></script>
-  
   <!-- Load menu.js before index.js -->
   <script type="module" src="js/menu.js"></script>
   <script type="module" src="index.js"></script>
