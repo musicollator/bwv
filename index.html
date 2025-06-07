@@ -47,13 +47,12 @@
   </div>
 
   <!-- Add missing main-content wrapper -->
-  <div class="main-content">
-    <!-- Loading spinner - will be replaced by Bach siegel animation -->
-    <div id="loading" class="text-center my-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+  <div class="main-content" style="position: relative;">
+    <!-- BWV Siegel loading animation - covers entire main-content area -->
+    <div id="loading" style="position: fixed; top: var(--header-height); left: 0; right: 0; bottom: 0; z-index: 1000; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0;">
+      <div style="width: min(60vw, 60vh); height: min(60vw, 60vh); border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        <bwv-siegel quantization="12" svg-path="bwv-siegel/exports/siegel.svg" freeze-duration="400" style="width: 100%; height: 100%;"></bwv-siegel>
       </div>
-      <div>Loading configuration and score…</div>
     </div>
 
     <!-- Main content area for musical notation -->
@@ -97,6 +96,9 @@
     </div>
   </footer>
 
+  <!-- Load BWV Siegel Web Component -->
+  <script type="module" src="bwv-siegel/exports/bwv-siegel.js"></script>
+  
   <!-- Load menu.js before index.js -->
   <script type="module" src="js/menu.js"></script>
   <script type="module" src="index.js"></script>
