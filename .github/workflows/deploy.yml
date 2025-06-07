@@ -129,6 +129,7 @@ jobs:
       run: |
         mkdir deploy
         cp index.html deploy/
+        cp bwv-siegel.html deploy/
         cp index.css deploy/
         cp index.js deploy/
         cp -r js deploy/
