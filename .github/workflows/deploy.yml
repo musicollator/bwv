@@ -68,6 +68,54 @@ jobs:
         echo "BWV_LIST=$VALID_SUBS" >> $GITHUB_OUTPUT
         echo "📁 Valid BWV submodules with exports: $VALID_SUBS"
 
+    - name: Setup BWV Siegel (separate from numbered BWVs)
+      id: setup-siegel
+      run: |
+        echo "🎭 Setting up BWV Siegel with sparse checkout..."
+        
+        # Clone bwv-siegel with sparse checkout for export/ directory
+        SIEGEL_AVAILABLE="false"
+        
+        echo "⬇️ Cloning bwv-siegel with sparse checkout"
+        git clone --filter=blob:none --sparse --no-checkout https://github.com/musicollator/bwv-siegel.git bwv-siegel
+        cd bwv-siegel
+        git sparse-checkout init --cone
+        git sparse-checkout set export/
+        git read-tree -mu HEAD
+        cd ..
+        
+        # Check if export directory exists after cloning
+        if [ -d "bwv-siegel/export" ]; then
+          echo "✅ bwv-siegel has export directory - including"
+          SIEGEL_AVAILABLE="true"
+          
+          echo "📂 Contents of bwv-siegel export directory:"
+          ls -la bwv-siegel/export || echo "Could not list export directory"
+          
+          # Verify required files exist
+          REQUIRED_FILES="bwv-siegel.js bwv-siegel.css bwv-siegel.html AngleCalculator.js siegel.svg"
+          MISSING_FILES=""
+          
+          for file in $REQUIRED_FILES; do
+            if [ ! -f "bwv-siegel/export/$file" ]; then
+              MISSING_FILES="$MISSING_FILES $file"
+            fi
+          done
+          
+          if [ -n "$MISSING_FILES" ]; then
+            echo "⚠️ Missing required files in bwv-siegel/export: $MISSING_FILES"
+            SIEGEL_AVAILABLE="false"
+          else
+            echo "✅ All required BWV Siegel files present"
+          fi
+        else
+          echo "⚠️ bwv-siegel does not have export directory - skipping"
+          rm -rf bwv-siegel  # Clean up since we won't use it
+        fi
+        
+        echo "SIEGEL_AVAILABLE=$SIEGEL_AVAILABLE" >> $GITHUB_OUTPUT
+        echo "🎭 BWV Siegel available: $SIEGEL_AVAILABLE"
+
     - name: List contents of submodules
       run: |
         for sub in ${{ steps.discover.outputs.BWV_LIST }}; do
@@ -78,6 +126,16 @@ jobs:
           ls -la $sub/exports || echo "No exports directory found"
           echo ""
         done
+        
+        # List BWV Siegel if available
+        if [ "${{ steps.setup-siegel.outputs.SIEGEL_AVAILABLE }}" = "true" ]; then
+          echo "🎭 Files in bwv-siegel after sparse checkout:"
+          ls -la bwv-siegel
+          echo ""
+          echo "📂 Contents of bwv-siegel export directory:"
+          ls -la bwv-siegel/export || echo "No export directory found"
+          echo ""
+        fi
 
     - name: Create BWV metadata JSON
       run: |
@@ -98,6 +156,7 @@ jobs:
         
         echo "  ]," >> bwvs.json
         echo "  \"count\": $(echo '${{ steps.discover.outputs.BWV_LIST }}' | wc -w)," >> bwvs.json
+        echo "  \"siegel_available\": ${{ steps.setup-siegel.outputs.SIEGEL_AVAILABLE }}," >> bwvs.json
         echo "  \"generated\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> bwvs.json
         echo "}" >> bwvs.json
         
@@ -113,10 +172,20 @@ jobs:
         cp -r js deploy/
         cp bwvs.json deploy/
         cp -r media deploy/
+        
+        # Copy numbered BWV submodules
         for sub in ${{ steps.discover.outputs.BWV_LIST }}; do
-          echo "📦 Copying $sub to deploy directory"
+          echo "📦 Copying numbered BWV $sub to deploy directory"
           cp -r $sub deploy/
         done
+        
+        # Copy BWV Siegel if available
+        if [ "${{ steps.setup-siegel.outputs.SIEGEL_AVAILABLE }}" = "true" ]; then
+          echo "🎭 Copying bwv-siegel to deploy directory"
+          cp -r bwv-siegel deploy/
+        else
+          echo "⚠️ Skipping bwv-siegel - not available"
+        fi
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
