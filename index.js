@@ -533,6 +533,57 @@ function debounce(func, wait) {
 
 const debouncedPositionButtons = debounce(positionButtons, 50);
 const debouncedCheckScroll = debounce(checkScrollButtonVisibility, 50);
+const debouncedAdjustBWV = debounce(adjustBWVButtonLayout, 50);
+
+// =============================================================================
+// RESPONSIVE BWV BUTTON MANAGEMENT
+// =============================================================================
+
+function adjustBWVButtonLayout() {
+  const container = document.getElementById('bwv-buttons-container');
+  const buttons = container.querySelectorAll('.btn');
+
+  if (buttons.length === 0) return;
+
+  // Reset to original text first - improved logic
+  buttons.forEach(btn => {
+    const workId = btn.dataset.workId;
+    if (workId) {
+      // Always reset to full format first, regardless of current state
+      const number = workId.replace('bwv', '');
+      btn.textContent = `BWV ${number}`;
+    }
+  });
+
+  // Reset container styles
+  container.style.justifyContent = 'center';
+  container.style.overflowX = 'visible';
+
+  // Force a reflow to ensure accurate measurements
+  container.offsetWidth;
+
+  // Check if container exceeds viewport width
+  if (container.scrollWidth > window.innerWidth) {
+    // Step 1: Remove "BWV " prefix
+    buttons.forEach(btn => {
+      const workId = btn.dataset.workId;
+      if (workId) {
+        const number = workId.replace('bwv', '');
+        btn.textContent = number.toUpperCase();
+      }
+    });
+
+    // Force another reflow
+    container.offsetWidth;
+
+    // Check again after removing BWV
+    if (container.scrollWidth > window.innerWidth) {
+      // Step 2: Enable horizontal scroll
+      container.style.justifyContent = 'flex-start';
+      container.style.overflowX = 'auto';
+    }
+  }
+}
 
 // =============================================================================
 // MOBILE DETECTION AND TIMING ADJUSTMENT
@@ -679,6 +730,9 @@ async function setup() {
     // After Bach loading completes, show the interface
     checkScrollButtonVisibility();
 
+    // Adjust BWV button layout after everything is loaded
+    setTimeout(adjustBWVButtonLayout, 100);
+
   } catch (err) {
     console.error("Setup error:", err);
     showConfigurationError(err.message);
@@ -698,7 +752,11 @@ function initEventHandlers() {
     button.style.visibility = 'visible';
   });
 
-  window.addEventListener('resize', debouncedPositionButtons);
+  window.addEventListener('resize', () => {
+    debouncedPositionButtons();
+    debouncedAdjustBWV();
+  });
+
   window.addEventListener('scroll', debouncedCheckScroll);
 
   audio.addEventListener("play", () => {

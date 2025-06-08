@@ -213,6 +213,32 @@ footer#footer {
   background: rgba(250, 248, 243, 0.9);
 }
 
+/* Responsive BWV buttons - prevent wrapping and enable horizontal scroll */
+#bwv-buttons-container {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+#bwv-buttons-container .btn {
+  white-space: nowrap;
+}
+
+/* Subtle scrollbar styling */
+#bwv-buttons-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+#bwv-buttons-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+#bwv-buttons-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
 #bwv-navigation .btn-warning {
   background-color: var(--bach-gold);
   border-color: var(--bach-brown);
