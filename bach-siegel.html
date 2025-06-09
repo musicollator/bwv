@@ -14,65 +14,56 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            min-height: 100vh;
             background: #faf8f3;
+            overflow: hidden; /* Prevent scrollbars */
         }
 
-        .container {
-            position: absolute;
+        /* Full viewport BWV Siegel component */
+        bwv-siegel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            --seal-size: 50vw;  
+            --sphere-radius: .8;  
+        }
+
+        /* Top-right aligned text elements */
+        .title {
+            position: fixed;
             top: 2rem;
             left: 2rem;
-            z-index: 0;
-        }
-
-        .title {
             font-size: 2.5rem;
             font-weight: 300;
             color: #6b7a8f;
-            margin-bottom: 0.5rem;
             letter-spacing: 2px;
+            z-index: 10;
+            text-align: right;
         }
 
         .subtitle {
+            position: fixed;
+            top: 5rem;
+            left: 2rem;
             font-size: 0.9rem;
             color: #a8b5c4;
-            margin-bottom: 3rem;
             font-weight: 400;
-        }
-
-        .siegel-container {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: min(90vw, 90vh, 800px);
-            height: min(90vw, 90vh, 800px);
-            border-radius: 50%;
-            background: transparent !important;
-            z-index: 1;
-        }
-
-        bwv-siegel {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: right;
         }
 
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1 class="title">JSB Siegel</h1>
-        <p class="subtitle">Infinite JS Bach Seal Animation</p>
-    </div>
+    <!-- Full viewport BWV Siegel -->
+    <bwv-siegel quantization="46" auto-start></bwv-siegel>
 
-    <div class="siegel-container">
-        <bwv-siegel quantization="34" auto-start></bwv-siegel>
-    </div>
+    <!-- Top-right text elements -->
+    <h1 class="title">JSB Siegel</h1>
+    <p class="subtitle">Infinite JS Bach Seal Animation</p>
 
     <script type="module" src="bwv-siegel/exports/bwv-siegel.js"></script>
     <script>
