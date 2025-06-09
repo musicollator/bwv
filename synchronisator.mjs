@@ -6,6 +6,9 @@
  * calibration by using pre-processed tick/bar data.
  */
 
+// Import intelligent channel to color mapping (reads from CSS)
+import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
+
 export class Synchronisator {
   constructor(syncData, audioElement, svgElement, config) {
     // Validate inputs
@@ -44,6 +47,9 @@ export class Synchronisator {
     this.remainingNotes = [];
     this.activeNotes = [];
     
+    // Channel color mapping
+    this.channelColorMap = new Map();
+    
     // Performance: Cache DOM elements
     this.barElementsCache = new Map(); // barNumber -> elements[]
     this.noteElementsCache = new Map(); // data-ref -> elements[]
@@ -67,6 +73,7 @@ export class Synchronisator {
   initialize() {
     this.buildElementCaches();
     this.processNotes();
+    this.setupChannelColorMapping();
     console.log(`🎼 Synchronisator initialized: ${this.notes.length} notes, ${this.barElementsCache.size} bars`);
   }
 
@@ -164,6 +171,67 @@ export class Synchronisator {
     console.log('🎨 Channel distribution:', channelCounts);
     
     this.resetNoteState();
+  }
+
+  setupChannelColorMapping() {
+    // Use channel statistics from meta.channels if available
+    if (this.syncData.meta.channels) {
+      try {
+        // Convert meta.channels to the format expected by createChannelColorMapping
+        const channelData = [];
+        
+        for (const [channelStr, stats] of Object.entries(this.syncData.meta.channels)) {
+          const channel = parseInt(channelStr);
+          
+          // Create mock note data with just the info needed for mapping
+          for (let i = 0; i < stats.count; i++) {
+            channelData.push({
+              channel: channel,
+              pitch: stats.minPitch + (i / stats.count) * (stats.maxPitch - stats.minPitch) // Distribute across range
+            });
+          }
+        }
+        
+        console.log('🎨 Using channel statistics from meta.channels:', this.syncData.meta.channels);
+        
+        // Create mapping using the intelligent system from channel2colour.js
+        this.channelColorMap = createChannelColorMapping(channelData);
+        
+        // Apply color classes to all note elements
+        this.notes.forEach(note => {
+          const colorIndex = this.channelColorMap.get(note.channel);
+          if (colorIndex !== undefined) {
+            note.elements.forEach(element => {
+              element.classList.add(`channel-${colorIndex}`);
+            });
+          }
+        });
+
+        // Log the mapping results with channel stats
+        if (this.channelColorMap.size > 0) {
+          logChannelMapping(this.channelColorMap, channelData);
+        } else {
+          console.log('🎵 No channel mapping applied (single channel or no channel data)');
+        }
+        
+      } catch (error) {
+        console.error('🚨 Error setting up channel color mapping from meta:', error);
+        this.fallbackChannelMapping();
+      }
+    } else {
+      console.warn('⚠️  No meta.channels found, using fallback mapping');
+      this.fallbackChannelMapping();
+    }
+  }
+
+  fallbackChannelMapping() {
+    // Fallback: use raw channel numbers
+    console.log('🎨 Using fallback channel mapping (raw channel numbers)');
+    this.notes.forEach(note => {
+      note.elements.forEach(element => {
+        element.classList.add(`channel-${note.channel}`);
+      });
+    });
   }
 
   getElementsForHrefs(hrefs) {
@@ -337,21 +405,25 @@ export class Synchronisator {
       return;
     }
     
-    console.log(`🌟 Highlighting note: ${note.hrefs.join(', ')} (channel ${note.channel}, ${note.elements.length} elements)`);
+    // Use mapped color index instead of raw channel
+    const colorIndex = this.channelColorMap.get(note.channel) ?? note.channel;
+    
+    console.log(`🌟 Highlighting note: ${note.hrefs.join(', ')} (channel ${note.channel} → color ${colorIndex}, ${note.elements.length} elements)`);
     
     note.elements.forEach(element => {
       element.classList.add('active');
-      element.classList.add(`channel-${note.channel}`);
-      console.log(`  ✅ Added 'active' and 'channel-${note.channel}' classes to:`, element.getAttribute('data-ref'));
+      // Note: channel class was already added during initialization
+      console.log(`  ✅ Added 'active' class to:`, element.getAttribute('data-ref'));
     });
   }
 
   unhighlightNote(note) {
-    console.log(`💫 Unhighlighting note: ${note.hrefs.join(', ')} (channel ${note.channel})`);
+    const colorIndex = this.channelColorMap.get(note.channel) ?? note.channel;
+    console.log(`💫 Unhighlighting note: ${note.hrefs.join(', ')} (channel ${note.channel} → color ${colorIndex})`);
     
     note.elements.forEach(element => {
       element.classList.remove('active');
-      element.classList.remove(`channel-${note.channel}`);
+      // Keep channel class for consistent coloring
     });
   }
 
@@ -359,10 +431,7 @@ export class Synchronisator {
     // Updated for new data-ref structure
     this.svg.querySelectorAll('path[data-ref].active').forEach(element => {
       element.classList.remove('active');
-      // Remove any channel classes
-      for (let i = 0; i <= 5; i++) {
-        element.classList.remove(`channel-${i}`);
-      }
+      // Keep channel classes for consistent coloring
     });
   }
 
@@ -412,7 +481,8 @@ export class Synchronisator {
       isPlaying: this.isPlaying,
       notesWithElements: this.notes.filter(n => n.elements.length > 0).length,
       cachedBars: this.barElementsCache.size,
-      cachedNoteRefs: this.noteElementsCache.size
+      cachedNoteRefs: this.noteElementsCache.size,
+      channelMapping: Object.fromEntries(this.channelColorMap)
     };
   }
 
@@ -430,6 +500,7 @@ export class Synchronisator {
     console.log('🎵 Sample notes:', this.notes.slice(0, 3));
     console.log('📋 Available data-refs:', Array.from(this.noteElementsCache.keys()).slice(0, 10));
     console.log('🎼 Cached bars:', Array.from(this.barElementsCache.keys()).sort((a,b) => a-b));
+    console.log('🎨 Channel mapping:', Object.fromEntries(this.channelColorMap));
     
     // Check CSS
     const activeElements = this.svg.querySelectorAll('.active');
