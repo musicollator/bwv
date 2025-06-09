@@ -132,6 +132,7 @@ jobs:
         cp bwv-siegel.html deploy/
         cp index.css deploy/
         cp index.js deploy/
+        cp synchronisator.mjs deploy/
         cp -r js deploy/
         cp bwvs.json deploy/
         cp -r media deploy/
