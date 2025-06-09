@@ -2,6 +2,8 @@
 import { Synchronisator } from './synchronisator.mjs';
 // Import intelligent channel to color mapping (reads from CSS)
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
+// Import BWV navigation menu system
+import { initializeBWVNavigation, adjustBWVButtonLayout } from './js/menu.js';
 
 // =============================================================================
 // WERK PARAMETER PROCESSING
@@ -407,55 +409,6 @@ const debouncedCheckScroll = debounce(checkScrollButtonVisibility, 50);
 const debouncedAdjustBWV = debounce(adjustBWVButtonLayout, 50);
 
 // =============================================================================
-// RESPONSIVE BWV BUTTON MANAGEMENT
-// =============================================================================
-
-function adjustBWVButtonLayout() {
-  const container = document.getElementById('bwv-buttons-container');
-  const buttons = container.querySelectorAll('.btn');
-
-  if (buttons.length === 0) return;
-
-  // Reset to original text first
-  buttons.forEach(btn => {
-    const workId = btn.dataset.workId;
-    if (workId) {
-      const number = workId.replace('bwv', '');
-      btn.textContent = `BWV ${number}`;
-    }
-  });
-
-  // Reset container styles
-  container.style.justifyContent = 'center';
-  container.style.overflowX = 'visible';
-
-  // Force a reflow
-  container.offsetWidth;
-
-  // Check if container exceeds viewport width
-  if (container.scrollWidth > window.innerWidth) {
-    // Step 1: Remove "BWV " prefix
-    buttons.forEach(btn => {
-      const workId = btn.dataset.workId;
-      if (workId) {
-        const number = workId.replace('bwv', '');
-        btn.textContent = number.toUpperCase();
-      }
-    });
-
-    // Force another reflow
-    container.offsetWidth;
-
-    // Check again after removing BWV
-    if (container.scrollWidth > window.innerWidth) {
-      // Step 2: Enable horizontal scroll
-      container.style.justifyContent = 'flex-start';
-      container.style.overflowX = 'auto';
-    }
-  }
-}
-
-// =============================================================================
 // MOBILE DETECTION AND TIMING ADJUSTMENT
 // =============================================================================
 
@@ -557,6 +510,11 @@ async function setup() {
     initEventHandlers();
     initializeMeasureHighlighter();
 
+    // Initialize BWV navigation menu system
+    console.log('🚀 Starting BWV navigation initialization...');
+    await initializeBWVNavigation();
+    console.log('✅ BWV navigation initialization complete');
+
     console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${sync.getStats().totalNotes} notes, ${sync.barElementsCache.size} bars`);
     console.log('🔍 Debug: Type sync.debug() in console for detailed info');
     console.log('🧪 Debug: Type sync.testHighlight("test-main.ly:14:23") to test highlighting');
@@ -565,7 +523,13 @@ async function setup() {
 
     // Show the interface
     checkScrollButtonVisibility();
-    setTimeout(adjustBWVButtonLayout, 100);
+    
+    // Adjust BWV button layout after navigation is fully initialized
+    console.log('⏱️  Scheduling BWV button layout adjustment...');
+    setTimeout(() => {
+      console.log('⏱️  Timeout fired, calling adjustBWVButtonLayout');
+      adjustBWVButtonLayout();
+    }, 100);
 
   } catch (err) {
     console.error("Setup error:", err);

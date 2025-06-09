@@ -11,7 +11,7 @@ class BWVNavigationMenu {
     this.minSwipeDistance = 50;
     this.isLoaded = false;
 
-    this.init();
+    // Don't auto-initialize - will be called explicitly
   }
 
   async init() {
@@ -56,13 +56,20 @@ class BWVNavigationMenu {
   }
 
   createNavigationButtons() {
+    console.log('🎯 createNavigationButtons called');
+    
     const container = document.getElementById('bwv-buttons-container');
     const loadingDiv = document.getElementById('bwv-loading');
 
     if (!container) {
-      console.error('BWV buttons container not found');
+      console.error('❌ BWV buttons container not found');
       return;
     }
+
+    console.log(`🎯 Container found, available works: ${this.availableWorks.length}`);
+
+    // Hide container initially to prevent layout flash
+    container.style.visibility = 'hidden';
 
     // Clear loading message
     if (loadingDiv) {
@@ -84,9 +91,17 @@ class BWVNavigationMenu {
       button.textContent = displayText;
 
       container.appendChild(button);
+      console.log(`🎯 Created button: ${displayText}`);
     });
 
     console.log(`📱 Created ${this.availableWorks.length} navigation buttons`);
+    
+    // Force a reflow to ensure buttons are rendered
+    container.offsetWidth;
+    
+    // Log final button count
+    const finalButtons = container.querySelectorAll('.btn');
+    console.log(`🎯 Final button count in DOM: ${finalButtons.length}`);
   }
 
   showLoadingError(message) {
@@ -210,26 +225,6 @@ class BWVNavigationMenu {
     window.location.href = url.toString();
   }
 
-  /*
-  showTransitionLoading() {
-    // Create a loading overlay for smooth transitions
-    const overlay = document.createElement('div');
-    overlay.className = 'bwv-transition-overlay';
-    overlay.innerHTML = `
-      <div class="bwv-transition-content">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <div class="mt-2">Loading BWV...</div>
-      </div>
-    `;
-    
-    document.body.appendChild(overlay);
-    
-    // The overlay will be removed when the page reloads
-  }
-  */
-
   // Method to get navigation info for external use
   getNavigationInfo() {
     return {
@@ -253,25 +248,103 @@ class BWVNavigationMenu {
 }
 
 // =============================================================================
-// INITIALIZATION
+// RESPONSIVE BWV BUTTON MANAGEMENT
+// =============================================================================
+
+function adjustBWVButtonLayout() {
+  console.log('🔧 adjustBWVButtonLayout called');
+  
+  const container = document.getElementById('bwv-buttons-container');
+  if (!container) {
+    console.warn('❌ BWV buttons container not found');
+    return;
+  }
+
+  const buttons = container.querySelectorAll('.btn');
+  console.log(`🔧 Found ${buttons.length} buttons in container`);
+
+  if (buttons.length === 0) {
+    console.warn('❌ No buttons found in container');
+    return;
+  }
+
+  // Reset to original text first
+  buttons.forEach(btn => {
+    const workId = btn.dataset.workId;
+    if (workId) {
+      const number = workId.replace('bwv', '');
+      btn.textContent = `BWV ${number}`;
+    }
+  });
+
+  // Reset container styles
+  container.style.justifyContent = 'center';
+  container.style.overflowX = 'visible';
+
+  // Force a reflow
+  container.offsetWidth;
+
+  console.log(`🔧 Container width: ${container.scrollWidth}px, Window width: ${window.innerWidth}px`);
+
+  // Check if container exceeds viewport width (with small buffer for margins/padding)
+  const buffer = 20; // Small buffer for margins and padding
+  if (container.scrollWidth > (window.innerWidth - buffer)) {
+    console.log('🔧 Container too wide (including buffer), removing BWV prefix');
+    
+    // Step 1: Remove "BWV " prefix
+    buttons.forEach(btn => {
+      const workId = btn.dataset.workId;
+      if (workId) {
+        const number = workId.replace('bwv', '');
+        btn.textContent = number.toUpperCase();
+      }
+    });
+
+    // Force another reflow
+    container.offsetWidth;
+
+    console.log(`🔧 After removing BWV - Container width: ${container.scrollWidth}px`);
+
+    // Check again after removing BWV (still with buffer)
+    if (container.scrollWidth > (window.innerWidth - buffer)) {
+      console.log('🔧 Still too wide, enabling horizontal scroll');
+      // Step 2: Enable horizontal scroll
+      container.style.justifyContent = 'flex-start';
+      container.style.overflowX = 'auto';
+    }
+  } else {
+    console.log('🔧 Container fits, no adjustment needed');
+  }
+
+  // Show the container now that layout is finalized
+  container.style.visibility = 'visible';
+  console.log('✨ BWV button layout finalized and made visible');
+}
+
+// =============================================================================
+// INITIALIZATION FUNCTION
 // =============================================================================
 
 let bwvNavigation = null;
 
-// Initialize navigation when DOM is ready
 async function initializeBWVNavigation() {
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', async () => {
-      bwvNavigation = new BWVNavigationMenu();
+    return new Promise((resolve) => {
+      document.addEventListener('DOMContentLoaded', async () => {
+        bwvNavigation = new BWVNavigationMenu();
+        await bwvNavigation.init();
+        resolve(bwvNavigation);
+      });
     });
   } else {
     bwvNavigation = new BWVNavigationMenu();
+    await bwvNavigation.init();
+    return bwvNavigation;
   }
 }
 
-// Export for use in other modules
-window.BWVNavigationMenu = BWVNavigationMenu;
-window.initializeBWVNavigation = initializeBWVNavigation;
+// =============================================================================
+// ES6 MODULE EXPORTS
+// =============================================================================
 
-// Auto-initialize
-initializeBWVNavigation();
+export { BWVNavigationMenu, initializeBWVNavigation, adjustBWVButtonLayout };
