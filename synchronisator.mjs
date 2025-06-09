@@ -108,26 +108,33 @@ export class Synchronisator {
   }
 
   processNotes() {
-    // Extract notes from flow data (filter out bars)
+    // Extract notes from flow data (filter out bars, handle new format)
     const flowNotes = this.syncData.flow
-      .filter(item => item.length === 3) // Notes: [start_tick, end_tick, hrefs]
-      .map(([startTick, endTick, hrefs]) => ({
-        startTick,
-        endTick,
-        hrefs: Array.isArray(hrefs) ? hrefs : [hrefs],
-        startTime: this.tickToSeconds(startTick),
-        endTime: this.tickToSeconds(endTick),
-        elements: this.getElementsForHrefs(hrefs)
-      }));
+      .filter(item => item.length >= 3 && item[3] !== 'bar') // Notes have 3-4 elements, bars have 'bar' as 4th element
+      .map(item => {
+        // New format: [start_tick, channel, end_tick, hrefs]
+        const [startTick, channel, endTick, hrefs] = item;
+        
+        return {
+          startTick,
+          endTick,
+          hrefs: Array.isArray(hrefs) ? hrefs : [hrefs],
+          channel: channel || 0, // Channel is now at index 1
+          startTime: this.tickToSeconds(startTick),
+          endTime: this.tickToSeconds(endTick),
+          elements: this.getElementsForHrefs(hrefs)
+        };
+      });
 
     console.log(`🎵 Processing ${flowNotes.length} notes from flow data`);
     
-    // Debug first few notes
+    // Debug first few notes with channel info
     if (flowNotes.length > 0) {
       console.log('📝 First 3 notes:', flowNotes.slice(0, 3).map(note => ({
         startTick: note.startTick,
         startTime: note.startTime.toFixed(3),
         hrefs: note.hrefs,
+        channel: note.channel,
         elementsFound: note.elements.length
       })));
     }
@@ -143,11 +150,18 @@ export class Synchronisator {
       console.log('📋 Available data-ref values (first 10):', availableRefs);
     }
 
-    // Sort by start time
+    // Sort by start time (notes should already be sorted by the Python script)
     this.notes = flowNotes.sort((a, b) => a.startTime - b.startTime);
     
     const notesWithElements = this.notes.filter(note => note.elements.length > 0);
     console.log(`✅ ${notesWithElements.length}/${this.notes.length} notes have matching SVG elements`);
+    
+    // Log channel distribution
+    const channelCounts = {};
+    this.notes.forEach(note => {
+      channelCounts[note.channel] = (channelCounts[note.channel] || 0) + 1;
+    });
+    console.log('🎨 Channel distribution:', channelCounts);
     
     this.resetNoteState();
   }
@@ -189,7 +203,7 @@ export class Synchronisator {
   }
 
   getCurrentBar(currentTime) {
-    // Extract bar data from flow
+    // Extract bar data from flow - bars are still [tick, None, bar_number, 'bar']
     const barTimings = this.syncData.flow
       .filter(item => item.length === 4 && item[3] === 'bar')
       .map(([tick, , barNumber]) => ({
@@ -323,25 +337,32 @@ export class Synchronisator {
       return;
     }
     
-    console.log(`🌟 Highlighting note: ${note.hrefs.join(', ')} (${note.elements.length} elements)`);
+    console.log(`🌟 Highlighting note: ${note.hrefs.join(', ')} (channel ${note.channel}, ${note.elements.length} elements)`);
     
     note.elements.forEach(element => {
       element.classList.add('active');
-      console.log(`  ✅ Added 'active' class to element:`, element.getAttribute('data-ref'));
+      element.classList.add(`channel-${note.channel}`);
+      console.log(`  ✅ Added 'active' and 'channel-${note.channel}' classes to:`, element.getAttribute('data-ref'));
     });
   }
 
   unhighlightNote(note) {
-    console.log(`💫 Unhighlighting note: ${note.hrefs.join(', ')}`);
+    console.log(`💫 Unhighlighting note: ${note.hrefs.join(', ')} (channel ${note.channel})`);
     
     note.elements.forEach(element => {
       element.classList.remove('active');
+      element.classList.remove(`channel-${note.channel}`);
     });
   }
 
   clearAllHighlights() {
-    this.svg.querySelectorAll('[data-ref].active').forEach(element => {
+    // Updated for new data-ref structure
+    this.svg.querySelectorAll('path[data-ref].active').forEach(element => {
       element.classList.remove('active');
+      // Remove any channel classes
+      for (let i = 0; i <= 5; i++) {
+        element.classList.remove(`channel-${i}`);
+      }
     });
   }
 
