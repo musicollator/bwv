@@ -238,6 +238,9 @@ async function loadConfiguration() {
 function applyConfiguration() {
   CONFIG = applyMobileTimingAdjustment(CONFIG);
 
+  // Make CONFIG globally available for menu system
+  window.CONFIG = CONFIG;
+
   document.title = CONFIG.workInfo.title;
   document.getElementById('page-title').textContent = CONFIG.workInfo.title;
   document.getElementById('total_bars').textContent = CONFIG.musicalStructure.totalMeasures;
@@ -246,9 +249,7 @@ function applyConfiguration() {
   audioSource.src = CONFIG.files.audioPath;
   audio.load();
 
-  const wikiButton = document.getElementById('button_wikipedia');
-  wikiButton.href = CONFIG.workInfo.externalURL;
-  wikiButton.title = `Wikipedia: ${CONFIG.workInfo.fullTitle}`;
+  // Hide the old standalone Wikipedia button since we now have contextual one
 }
 
 function showConfigurationError(message) {
@@ -379,7 +380,8 @@ function applyChannelColors(syncData) {
 function positionButtons() {
   if (!svgGlobal) return;
 
-  const buttons = document.querySelectorAll('#button_wikipedia, #button_scroll_to_top');
+  // Only position the scroll-to-top button now (Wikipedia button is contextual in header)
+  const buttons = document.querySelectorAll('#button_scroll_to_top');
   const svgRect = svgGlobal.getBoundingClientRect();
 
   buttons.forEach(button => {
@@ -546,7 +548,8 @@ async function setup() {
 
 function initEventHandlers() {
   positionButtons();
-  document.querySelectorAll('#button_wikipedia, #button_scroll_to_top, #bar_spy').forEach(button => {
+  // Only manage scroll-to-top and bar spy visibility (Wikipedia button is contextual now)
+  document.querySelectorAll('#button_scroll_to_top, #bar_spy').forEach(button => {
     button.style.visibility = 'visible';
   });
 

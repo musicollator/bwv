@@ -57,7 +57,7 @@ class BWVNavigationMenu {
 
   createNavigationButtons() {
     console.log('🎯 createNavigationButtons called');
-    
+
     const container = document.getElementById('bwv-buttons-container');
     const loadingDiv = document.getElementById('bwv-loading');
 
@@ -95,10 +95,10 @@ class BWVNavigationMenu {
     });
 
     console.log(`📱 Created ${this.availableWorks.length} navigation buttons`);
-    
+
     // Force a reflow to ensure buttons are rendered
     container.offsetWidth;
-    
+
     // Log final button count
     const finalButtons = container.querySelectorAll('.btn');
     console.log(`🎯 Final button count in DOM: ${finalButtons.length}`);
@@ -127,17 +127,99 @@ class BWVNavigationMenu {
   }
 
   updateActiveState() {
-    // Remove active styling from all buttons
+    // Remove active styling and re-enable all buttons, restore original content
+    // Remove active styling and re-enable all buttons, restore original content
     document.querySelectorAll('[data-work-id]').forEach(btn => {
-      btn.classList.remove('btn-warning');
+      btn.classList.remove('btn-warning', 'btn-secondary');
       btn.classList.add('btn-outline-dark');
+      btn.disabled = false;
+      btn.style.cursor = '';
+      btn.style.display = '';
+      btn.style.alignItems = '';
+      btn.style.justifyContent = '';
+      btn.style.backgroundColor = '';
+      btn.style.borderColor = '';
+      btn.style.border = ''; // Clear any custom border
+      btn.style.color = ''; // Clear any custom text color
+      btn.style.minHeight = ''; // Clear any custom height
+      btn.style.pointerEvents = ''; // Clear pointer events
+
+      // Restore original BWV text
+      const workId = btn.dataset.workId;
+      if (workId) {
+        const number = workId.replace('bwv', '');
+        btn.textContent = `BWV ${number}`;
+      }
     });
 
-    // Add active styling to current work
+    // Find and enhance the current work button
     const activeBtn = document.querySelector(`[data-work-id="${this.currentWorkId}"]`);
     if (activeBtn) {
+      // Style as current with Bach gold background and border
       activeBtn.classList.remove('btn-outline-dark');
-      activeBtn.classList.add('btn-warning');
+      activeBtn.style.backgroundColor = 'var(--bach-gold, #daa520)';
+      activeBtn.style.borderColor = 'var(--bach-gold, black)';
+      activeBtn.style.border = '1px solid var(--bach-brown, black)';
+      activeBtn.style.color = 'var(--bach-mid, black)';
+      activeBtn.style.cursor = 'default';
+      activeBtn.style.minHeight = '32px'; // Ensure proper button height
+      activeBtn.style.padding = '0 0.5rem';
+
+      // Get the BWV number for display
+      const number = this.currentWorkId.replace('bwv', '');
+
+      // Create enhanced content with integrated Wikipedia element
+      activeBtn.innerHTML = `
+  <span style="margin-right: 8px;">BWV ${number}</span>
+  <span class="wiki-element" 
+        style="display: inline-flex; align-items: center; justify-content: center; 
+               width: 28px; height: 28px; 
+               background: transparent; 
+               border: none;
+               cursor: pointer; margin-left: auto;
+               pointer-events: all; position: relative;"
+        title="Open Wikipedia in new tab">
+    <img src="media/Wikipedia-logo-v2.svg" width="24" height="24" alt="Wikipedia">
+  </span>
+`;
+      // Make the button a flex container but DON'T disable it
+      activeBtn.style.display = 'flex';
+      activeBtn.style.alignItems = 'center';
+      activeBtn.style.justifyContent = 'space-between';
+      activeBtn.style.pointerEvents = 'none'; // Disable main button clicks
+      activeBtn.style.boxSizing = 'border-box';
+
+      // Add click handler specifically to the Wikipedia element
+      const wikiElement = activeBtn.querySelector('.wiki-element');
+      if (wikiElement) {
+        // Ensure the Wikipedia element can receive clicks
+        wikiElement.style.pointerEvents = 'all';
+
+        wikiElement.addEventListener('click', (e) => {
+          console.log('🔗 Wikipedia element clicked!');
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Get Wikipedia URL from global CONFIG
+          if (window.CONFIG?.workInfo?.externalURL) {
+            console.log('🔗 Opening Wikipedia:', window.CONFIG.workInfo.externalURL);
+            window.open(window.CONFIG.workInfo.externalURL, '_blank', 'noopener,noreferrer');
+          } else {
+            console.warn('🔗 No Wikipedia URL found in CONFIG');
+          }
+        });
+
+        // Add hover effect for better UX
+        wikiElement.addEventListener('mouseenter', () => {
+          wikiElement.style.backgroundColor = 'rgba(0,0,0,0.1)';
+          wikiElement.style.borderRadius = '4px';
+        });
+
+        wikiElement.addEventListener('mouseleave', () => {
+          wikiElement.style.backgroundColor = 'transparent';
+          wikiElement.style.borderRadius = '';
+        });
+      }
     }
   }
 
@@ -253,33 +335,45 @@ class BWVNavigationMenu {
 
 function adjustBWVButtonLayout() {
   console.log('🔧 adjustBWVButtonLayout called');
-  
+
   const container = document.getElementById('bwv-buttons-container');
   if (!container) {
     console.warn('❌ BWV buttons container not found');
     return;
   }
 
-  const buttons = container.querySelectorAll('.btn');
-  console.log(`🔧 Found ${buttons.length} buttons in container`);
+  const buttons = container.querySelectorAll('.btn[data-work-id]');
+  console.log(`🔧 Found ${buttons.length} BWV buttons in container`);
 
   if (buttons.length === 0) {
     console.warn('❌ No buttons found in container');
     return;
   }
 
-  // Reset to original text first
+  // Reset to original text first (handling both regular and enhanced buttons)
   buttons.forEach(btn => {
     const workId = btn.dataset.workId;
     if (workId) {
       const number = workId.replace('bwv', '');
-      btn.textContent = `BWV ${number}`;
+
+      // Check if this is the enhanced button with Wikipedia element
+      if (btn.querySelector('.wiki-element')) {
+        // Update the text span while preserving Wikipedia element
+        const textSpan = btn.querySelector('span:first-child');
+        if (textSpan) {
+          textSpan.textContent = `BWV ${number}`;
+        }
+      } else {
+        // Regular button
+        btn.textContent = `BWV ${number}`;
+      }
     }
   });
 
   // Reset container styles
   container.style.justifyContent = 'center';
   container.style.overflowX = 'visible';
+  container.style.minHeight = '32px';
 
   // Force a reflow
   container.offsetWidth;
@@ -287,16 +381,27 @@ function adjustBWVButtonLayout() {
   console.log(`🔧 Container width: ${container.scrollWidth}px, Window width: ${window.innerWidth}px`);
 
   // Check if container exceeds viewport width (with small buffer for margins/padding)
-  const buffer = 20; // Small buffer for margins and padding
+  const buffer = 20;
   if (container.scrollWidth > (window.innerWidth - buffer)) {
     console.log('🔧 Container too wide (including buffer), removing BWV prefix');
-    
-    // Step 1: Remove "BWV " prefix
+
+    // Step 1: Remove "BWV " prefix from all buttons
     buttons.forEach(btn => {
       const workId = btn.dataset.workId;
       if (workId) {
         const number = workId.replace('bwv', '');
-        btn.textContent = number.toUpperCase();
+
+        // Check if this is the enhanced button with Wikipedia element
+        if (btn.querySelector('.wiki-element')) {
+          // Update the text span while preserving Wikipedia element
+          const textSpan = btn.querySelector('span:first-child');
+          if (textSpan) {
+            textSpan.textContent = number.toUpperCase();
+          }
+        } else {
+          // Regular button
+          btn.textContent = number.toUpperCase();
+        }
       }
     });
 
