@@ -1,5 +1,5 @@
-// Import LilyPond timing system
-import { initializeLilyPondTiming, createLilyPondGetCurrentBar, getLilyPondTimingInfo } from '/js/bars.js';
+// Import unified timing system
+import { Synchronisator } from './synchronisator.mjs';
 // Import intelligent channel to color mapping (reads from CSS)
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
 
@@ -212,10 +212,17 @@ async function loadConfiguration() {
     const yamlText = await configResponse.text();
     CONFIG = jsyaml.load(yamlText);
 
-    // Massage file paths
-    CONFIG.files.svgPath = `${workId}/exports/${CONFIG.files.svgPath}`;
-    CONFIG.files.notesPath = `${workId}/exports/${CONFIG.files.notesPath}`;
-    CONFIG.files.audioPath = `${workId}/exports/${CONFIG.files.audioPath}`;
+    // Update file paths for new unified format
+    const basePath = `${workId}/exports/`;
+    CONFIG.files.svgPath = `${basePath}${workId}.svg`;           // Cleaned SVG
+    CONFIG.files.syncPath = `${basePath}${workId}.yaml`;         // Unified timing data
+    CONFIG.files.audioPath = `${basePath}${CONFIG.files.audioPath}`;
+
+    console.log('📁 File paths configured:', {
+      svgPath: CONFIG.files.svgPath,
+      syncPath: CONFIG.files.syncPath,
+      audioPath: CONFIG.files.audioPath
+    });
 
     applyConfiguration();
     return CONFIG;
@@ -231,7 +238,7 @@ function applyConfiguration() {
 
   document.title = CONFIG.workInfo.title;
   document.getElementById('page-title').textContent = CONFIG.workInfo.title;
-  document.getElementById('total_bars').textContent = CONFIG.musicalStructure.totalBars;
+  document.getElementById('total_bars').textContent = CONFIG.musicalStructure.totalMeasures;
 
   const audioSource = document.getElementById('audio-source');
   audioSource.src = CONFIG.files.audioPath;
@@ -255,104 +262,22 @@ function showConfigurationError(message) {
 }
 
 // =============================================================================
-// GLOBAL STATE VARIABLES
+// GLOBAL STATE VARIABLES (Simplified)
 // =============================================================================
 
 const audio = document.getElementById("audio");
-let notes = [], remainingNotes = [], offCandidateNotes = [];
-let convertedNotes = [];
-let svgGlobal, noteDataGlobal, bodyGlobal, headerElementGlobal, footerElementGlobal, currentBarGlobal;
-let isPlaying = false;
-let currentVisibleBar = -1;
+let svgGlobal, bodyGlobal, headerElementGlobal, footerElementGlobal, currentBarGlobal;
 let HEADER_HEIGHT = 120;
-let maxTick = 0;
 
-// Performance optimization: Bar element mapping
-let bar2rectsGlobal = new Map(); // barNumber -> array of rect elements
-
-// LilyPond timing integration
-let lilyPondGetCurrentBar = null;
-
-// =============================================================================
-// BAR MAPPING INITIALIZATION (Performance Optimization)
-// =============================================================================
-
-function initializeBarMapping() {
-  bar2rectsGlobal.clear();
-
-  // Single DOM query to get all bar rects
-  const allBarRects = document.querySelectorAll('rect[data-bar]');
-
-  allBarRects.forEach(barRect => {
-    const barNumber = parseInt(barRect.getAttribute('data-bar'));
-    if (!isNaN(barNumber)) {
-      if (!bar2rectsGlobal.has(barNumber)) {
-        bar2rectsGlobal.set(barNumber, []);
-      }
-      bar2rectsGlobal.get(barNumber).push(barRect);
-    }
-  });
-
-  console.log(`📊 Bar mapping initialized: ${bar2rectsGlobal.size} bars, ${allBarRects.length} total rects`);
-}
-
-// =============================================================================
-// MIDI TIMING CONVERSION
-// =============================================================================
-
-function tickToSeconds(tick) {
-  if (maxTick === 0) return 0;
-  return (tick / maxTick) * CONFIG.musicalStructure.totalDurationSeconds;
-}
-
-function convertNoteTiming(note) {
-  if (note.on_tick !== undefined && note.off_tick !== undefined) {
-    return {
-      ...note,
-      on: tickToSeconds(note.on_tick),
-      off: tickToSeconds(note.off_tick)
-    };
-  }
-  return note;
-}
-
-// =============================================================================
-// CONFIGURATION-DEPENDENT CALCULATIONS
-// =============================================================================
-
-function getCurrentBar(currentTime) {
-  if (lilyPondGetCurrentBar) {
-    return lilyPondGetCurrentBar(currentTime);
-  }
-
-  const secondsPerBar = CONFIG.musicalStructure.totalDurationSeconds / CONFIG.musicalStructure.totalBars;
-  const barNumber = Math.floor(currentTime / secondsPerBar) + 1;
-  return Math.max(1, Math.min(CONFIG.musicalStructure.totalBars, barNumber));
-}
-
-// =============================================================================
-// PLAYBACK STATE MANAGEMENT
-// =============================================================================
-
-function setPlayingState(isPlayingState) {
-  if (!bodyGlobal) return;
-
-  if (isPlayingState) {
-    bodyGlobal?.classList.add('playing');
-  } else {
-    bodyGlobal?.classList.remove('playing');
-    unhighlightAllNotes();
-    hideAllBars();
-    currentVisibleBar = -1;
-  }
-}
+// Main synchronization system
+let sync = null;
 
 // =============================================================================
 // UI VISIBILITY MANAGEMENT
 // =============================================================================
 
 function checkScrollButtonVisibility() {
-  if (!bodyGlobal || !svgGlobal || isPlaying) return;
+  if (!bodyGlobal || !svgGlobal || (sync && sync.isPlaying)) return;
 
   const svgRect = svgGlobal.getBoundingClientRect();
   const tolerance = 50;
@@ -373,12 +298,15 @@ function checkScrollButtonVisibility() {
 // OPTIMIZED SMART SCROLLING SYSTEM
 // =============================================================================
 
-function scrollToBar(barRects) {
-  if (!barRects || barRects.length === 0) return;
+function scrollToBar(barNumber) {
+  if (!sync) return;
+  
+  const barElements = sync.barElementsCache.get(barNumber);
+  if (!barElements || barElements.length === 0) return;
 
   let minTop = Infinity, maxBottom = -Infinity;
-  barRects.forEach(barRect => {
-    const { top, bottom } = barRect.getBoundingClientRect();
+  barElements.forEach(barElement => {
+    const { top, bottom } = barElement.getBoundingClientRect();
     minTop = Math.min(minTop, top);
     maxBottom = Math.max(maxBottom, bottom);
   });
@@ -401,102 +329,45 @@ function scrollToBar(barRects) {
 }
 
 // =============================================================================
-// OPTIMIZED BAR MANAGEMENT
+// PLAYBACK STATE MANAGEMENT (Simplified)
 // =============================================================================
 
-function hideAllBars() {
-  // Use cached mapping for better performance
-  bar2rectsGlobal.forEach(barRects => {
-    barRects.forEach(barRect => {
-      barRect.style.visibility = 'hidden';
-    });
-  });
-  currentVisibleBar = -1;
-}
+function setPlayingState(isPlayingState) {
+  if (!bodyGlobal) return;
 
-function showBar(barNumber) {
-  // Single lookup - get rects once and reuse
-  const barRects = bar2rectsGlobal.get(barNumber);
-  if (!barRects) return;
-
-  // Pass rects directly instead of barNumber to avoid duplicate lookup
-  scrollToBar(barRects);
-
-  currentBarGlobal.innerText = barNumber;
-
-  // Reuse the same rects for visibility
-  barRects.forEach(barRect => {
-    barRect.style.visibility = 'visible';
-  });
+  if (isPlayingState) {
+    bodyGlobal?.classList.add('playing');
+  } else {
+    bodyGlobal?.classList.remove('playing');
+  }
 }
 
 // =============================================================================
-// NOTE HIGHLIGHTING SYSTEM
+// CHANNEL TO COLOR MAPPING (Updated for data-ref)
 // =============================================================================
 
-function highlightNote(note) {
-  note.elements.forEach(el => el.classList.add("active"));
-}
+function applyChannelColors(syncData) {
+  if (!syncData || !svgGlobal) return;
 
-function unhighlightNote(note) {
-  note.elements.forEach(el => el.classList.remove("active"));
-}
-
-function unhighlightAllNotes() {
-  if (!svgGlobal) return;
-  svgGlobal.querySelectorAll('a[href]:not([href=""]).active').forEach(el => {
-    el.classList.remove("active")
-  });
-}
-
-// =============================================================================
-// NOTE DATA CONVERSION (Updated with Intelligent Channel Mapping from CSS)
-// =============================================================================
-
-function convertNotesFromTicks() {
-  maxTick = Math.max(...noteDataGlobal.map(note =>
-    Math.max(note.on_tick || 0, note.off_tick || 0)
-  ));
-
-  // Create intelligent channel mapping based on pitch ranges (reads from CSS)
-  const channelColorMap = createChannelColorMapping(noteDataGlobal);
-
-  convertedNotes = noteDataGlobal.map(rawNote => {
-    const note = convertNoteTiming(rawNote);
-
-    const elements = note.hrefs.map(href => {
-      const selector = `a[href$="${href}"]`;
-      return svgGlobal.querySelector(selector);
-    }).filter(Boolean);
-
-    // Map actual MIDI channel to intelligently assigned color index
-    const colorIndex = channelColorMap.get(note.channel);
-    elements.forEach(el => {
-      el.classList.add(`channel-${colorIndex}`);
+  // Extract notes with channel information from flow data
+  const notesWithChannels = syncData.flow
+    .filter(item => item.length === 3) // Notes only
+    .map(([, , hrefs]) => {
+      // Find corresponding note data with channel info
+      // This would need to be passed from the sync data or reconstructed
+      return { hrefs: Array.isArray(hrefs) ? hrefs : [hrefs] };
     });
 
-    return {
-      on: note.on,
-      off: note.off,
-      pitch: note.pitch,
-      channel: note.channel,
-      colorIndex: colorIndex, // Store for debugging
-      elements,
-    };
+  // Apply color classes to note elements using data-ref
+  notesWithChannels.forEach(note => {
+    note.hrefs.forEach(href => {
+      const elements = svgGlobal.querySelectorAll(`[data-ref="${href}"]`);
+      elements.forEach(element => {
+        // Apply channel-based color class
+        element.classList.add(`channel-${note.channel || 0}`);
+      });
+    });
   });
-
-  convertedNotes.sort((a, b) => a.on - b.on);
-
-  // Log intelligent channel mapping (with actual CSS colors)
-  logChannelMapping(channelColorMap, noteDataGlobal);
-}
-
-function initializeNotes() {
-  notes = [...convertedNotes];
-  remainingNotes = [...notes];
-  offCandidateNotes = [];
-  unhighlightAllNotes();
-  hideAllBars();
 }
 
 // =============================================================================
@@ -545,11 +416,10 @@ function adjustBWVButtonLayout() {
 
   if (buttons.length === 0) return;
 
-  // Reset to original text first - improved logic
+  // Reset to original text first
   buttons.forEach(btn => {
     const workId = btn.dataset.workId;
     if (workId) {
-      // Always reset to full format first, regardless of current state
       const number = workId.replace('bwv', '');
       btn.textContent = `BWV ${number}`;
     }
@@ -559,7 +429,7 @@ function adjustBWVButtonLayout() {
   container.style.justifyContent = 'center';
   container.style.overflowX = 'visible';
 
-  // Force a reflow to ensure accurate measurements
+  // Force a reflow
   container.offsetWidth;
 
   // Check if container exceeds viewport width
@@ -614,65 +484,44 @@ function applyMobileTimingAdjustment(config) {
 }
 
 // =============================================================================
-// REAL-TIME PLAYBACK SYNCHRONIZATION  
-// =============================================================================
-
-function syncLoop() {
-  if (!isPlaying || !CONFIG) return;
-
-  const now = audio.currentTime;
-  const visualTime = now + CONFIG.musicalStructure.visualLeadTimeSeconds;
-
-  // Activate notes that should start playing
-  while (remainingNotes.length && remainingNotes[0].on <= visualTime) {
-    const note = remainingNotes.shift();
-    highlightNote(note);
-    offCandidateNotes.push(note);
-  }
-
-  // Deactivate notes that should stop playing
-  offCandidateNotes = offCandidateNotes.filter(note => {
-    if (note.off <= visualTime) {
-      unhighlightNote(note);
-      return false;
-    }
-    return true;
-  });
-
-  // Update bar highlighting
-  const currentBar = getCurrentBar(visualTime);
-  if (currentBar !== currentVisibleBar) {
-    hideAllBars();
-    showBar(currentBar);
-    currentVisibleBar = currentBar;
-  }
-
-  requestAnimationFrame(syncLoop);
-}
-
-// =============================================================================
-// APPLICATION INITIALIZATION (with Glorious Bach Loading)
+// APPLICATION INITIALIZATION (Simplified)
 // =============================================================================
 
 async function setup() {
-  // Replace boring spinner with majestic Bach siegel loading!
   try {
     // Load configuration
     await loadConfiguration();
 
-    // Load SVG and note data in parallel
-    const [svgText, noteData] = await Promise.all([
+    // Load unified sync data and SVG in parallel
+    const [svgText, syncData] = await Promise.all([
       fetch(CONFIG.files.svgPath).then(r => {
         if (!r.ok) throw new Error(`Failed to load SVG: ${CONFIG.files.svgPath}`);
         return r.text();
       }),
-      fetch(CONFIG.files.notesPath).then(r => {
-        if (!r.ok) throw new Error(`Failed to load notes: ${CONFIG.files.notesPath}`);
-        return r.json();
+      fetch(CONFIG.files.syncPath).then(r => {
+        if (!r.ok) throw new Error(`Failed to load sync data: ${CONFIG.files.syncPath}`);
+        return r.text();
+      }).then(yamlText => {
+        console.log('📄 Raw YAML loaded, parsing...');
+        const parsed = jsyaml.load(yamlText);
+        console.log('✅ YAML parsed successfully:', {
+          hasMeta: !!parsed.meta,
+          hasFlow: !!parsed.flow,
+          metaKeys: parsed.meta ? Object.keys(parsed.meta) : 'none',
+          flowLength: parsed.flow ? parsed.flow.length : 0
+        });
+        
+        // Validate structure
+        if (!parsed.meta) {
+          throw new Error('Sync data missing "meta" section');
+        }
+        if (!parsed.flow) {
+          throw new Error('Sync data missing "flow" section');
+        }
+        
+        return parsed;
       })
     ]);
-
-    noteDataGlobal = noteData;
 
     // Initialize DOM references
     const svgContainer = document.getElementById("svg-container");
@@ -690,47 +539,32 @@ async function setup() {
       throw new Error("SVG element not found in loaded content");
     }
 
-    // Initialize bar mapping for performance optimization
-    initializeBarMapping();
-
-    convertNotesFromTicks();
-
-    // Initialize LilyPond timing system with config support
-    const originalGetCurrentBar = (currentTime) => {
-      const secondsPerBar = CONFIG.musicalStructure.totalDurationSeconds / CONFIG.musicalStructure.totalBars;
-      const barNumber = Math.floor(currentTime / secondsPerBar) + 1;
-      return Math.max(1, Math.min(CONFIG.musicalStructure.totalBars, barNumber));
+    // Initialize the unified synchronization system
+    sync = new Synchronisator(syncData, audio, svgGlobal, CONFIG);
+    
+    // Make synchronisator globally accessible for debugging
+    window.sync = sync;
+    
+    // Set up custom bar display callback
+    sync.onBarChange = (barNumber) => {
+      currentBarGlobal.innerText = barNumber;
+      scrollToBar(barNumber);
     };
 
-    const lilyPondActive = initializeLilyPondTiming(
-      convertedNotes,
-      CONFIG.musicalStructure.totalDurationSeconds,
-      originalGetCurrentBar,
-      CONFIG  // Pass CONFIG for anacrusis and incomplete measure support
-    );
+    // Apply channel colors (if channel data is available)
+    applyChannelColors(syncData);
 
-    if (lilyPondActive) {
-      lilyPondGetCurrentBar = createLilyPondGetCurrentBar();
-    }
-
-    initializeNotes();
     initEventHandlers();
     initializeMeasureHighlighter();
 
-    // Essential info only
-    console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${notes.length} notes, ${CONFIG.musicalStructure.totalBars} bars`);
-
-    const timingInfo = getLilyPondTimingInfo();
-    if (timingInfo.isActive) {
-      console.log('✅ LilyPond timing active');
-    }
-
+    console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${sync.getStats().totalNotes} notes, ${sync.barElementsCache.size} bars`);
+    console.log('🔍 Debug: Type sync.debug() in console for detailed info');
+    console.log('🧪 Debug: Type sync.testHighlight("test-main.ly:14:23") to test highlighting');
+    console.log('🎨 Debug: Check if .active CSS class exists and is visible');
     console.log('🎵 BWV Player fully loaded and ready!');
 
-    // After Bach loading completes, show the interface
+    // Show the interface
     checkScrollButtonVisibility();
-
-    // Adjust BWV button layout after everything is loaded
     setTimeout(adjustBWVButtonLayout, 100);
 
   } catch (err) {
@@ -743,7 +577,7 @@ async function setup() {
 }
 
 // =============================================================================
-// EVENT HANDLERS
+// EVENT HANDLERS (Simplified)
 // =============================================================================
 
 function initEventHandlers() {
@@ -759,57 +593,37 @@ function initEventHandlers() {
 
   window.addEventListener('scroll', debouncedCheckScroll);
 
+  // Audio event handlers - simplified with synchronisator
   audio.addEventListener("play", () => {
-    isPlaying = true;
     setPlayingState(true);
-    requestAnimationFrame(syncLoop);
+    sync?.start();
   });
 
   audio.addEventListener("pause", () => {
-    isPlaying = false;
     setPlayingState(false);
+    sync?.stop();
   });
 
   audio.addEventListener("ended", () => {
-    isPlaying = false;
     setPlayingState(false);
+    sync?.stop();
     audio.currentTime = 0;
-    initializeNotes();
-    currentVisibleBar = -1;
   });
 
+  // Seeking - much simpler with synchronisator
   let seekingTimeout;
-  function handleSeek() {
-    if (!CONFIG) return;
-
-    const now = audio.currentTime;
-    const visualTime = now + CONFIG.musicalStructure.visualLeadTimeSeconds;
-
-    remainingNotes = notes.filter(note => note.on > visualTime);
-    offCandidateNotes = notes.filter(note => note.on <= visualTime && note.off > visualTime);
-
-    unhighlightAllNotes();
-    offCandidateNotes.forEach(note => highlightNote(note));
-
-    const currentBar = getCurrentBar(visualTime);
-    hideAllBars();
-    showBar(currentBar);
-    currentVisibleBar = currentBar;
-  }
-
   audio.addEventListener('seeking', () => {
     bodyGlobal?.classList.add('seeking');
     clearTimeout(seekingTimeout);
-    handleSeek();
+    sync?.seek(audio.currentTime);
   });
 
   audio.addEventListener("seeked", () => {
     clearTimeout(seekingTimeout);
     seekingTimeout = setTimeout(() => {
       bodyGlobal?.classList.remove('seeking');
-      hideAllBars();
     }, 1000);
-    handleSeek();
+    sync?.seek(audio.currentTime);
   });
 }
 

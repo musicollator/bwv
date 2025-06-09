@@ -65,28 +65,23 @@ body {
   max-width: 100%;
 }
 
-#svg-container>svg a[href] {
+/* Updated for new data-ref structure - basic note appearance */
+#svg-container>svg path[data-ref] {
   color: black;
 }
 
-/* SVG fill color 
-#svg-container>svg * {
-  fill: black;
-}
-*/
-
 /* Note highlighting transitions - slow fade out for smooth visual */
-#svg-container>svg a[href] path {
+#svg-container>svg path[data-ref] {
   transition: fill 1.25s ease, filter 1.25s ease, transform 1.25s ease;
 }
 
 /* Fast fade in for immediate visual feedback */
-#svg-container>svg a[href].active path {
+#svg-container>svg path[data-ref].active {
   transition: fill 0.15s linear, filter 0.15s linear, transform 0.15s linear;
 }
 
 /* Scale effect for active notes */
-body.playing #svg-container>svg a[href].active {
+body.playing #svg-container>svg path[data-ref].active {
   transform-box: fill-box;
   transform-origin: center;
   transform: scale(1.25);
@@ -105,33 +100,33 @@ body.seeking #svg-container>svg rect[data-bar] {
   filter: blur(1rem) drop-shadow(0 0 0.2rem var(--bach-dark));
 }
 
-/* Channel-specific colors - using CSS custom properties as source of truth */
-body.playing #svg-container>svg a[href].active.channel-0 path {
+/* Channel-specific colors - updated for new data-ref structure */
+body.playing #svg-container>svg path[data-ref].active.channel-0 {
   fill: var(--voice-0-color) !important;
   filter: drop-shadow(0 0 5px var(--voice-0-color)) drop-shadow(0 0 10px var(--voice-0-color));
 }
 
-body.playing #svg-container>svg a[href].active.channel-1 path {
+body.playing #svg-container>svg path[data-ref].active.channel-1 {
   fill: var(--voice-1-color) !important;
   filter: drop-shadow(0 0 5px var(--voice-1-color)) drop-shadow(0 0 10px var(--voice-1-color));
 }
 
-body.playing #svg-container>svg a[href].active.channel-2 path {
+body.playing #svg-container>svg path[data-ref].active.channel-2 {
   fill: var(--voice-2-color) !important;
   filter: drop-shadow(0 0 5px var(--voice-2-color)) drop-shadow(0 0 10px var(--voice-2-color));
 }
 
-body.playing #svg-container>svg a[href].active.channel-3 path {
+body.playing #svg-container>svg path[data-ref].active.channel-3 {
   fill: var(--voice-3-color) !important;
   filter: drop-shadow(0 0 5px var(--voice-3-color)) drop-shadow(0 0 10px var(--voice-3-color));
 }
 
-body.playing #svg-container>svg a[href].active.channel-4 path {
+body.playing #svg-container>svg path[data-ref].active.channel-4 {
   fill: var(--voice-4-color) !important;
   filter: drop-shadow(0 0 5px var(--voice-4-color)) drop-shadow(0 0 10px var(--voice-4-color));
 }
 
-body.playing #svg-container>svg a[href].active.channel-5 path {
+body.playing #svg-container>svg path[data-ref].active.channel-5 {
   fill: var(--voice-5-color) !important;
   filter: drop-shadow(0 0 5px var(--voice-5-color)) drop-shadow(0 0 10px var(--voice-5-color));
 }
@@ -289,7 +284,7 @@ footer#footer {
 }
 
 /* Target the specific path structure */
-#svg-container>svg a path[fill="none"][stroke="none"] {
+#svg-container>svg path[fill="none"][stroke="none"] {
   display: none !important;
 }
 
