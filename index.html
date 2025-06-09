@@ -52,8 +52,7 @@
     <!-- Bootstrap loading animation in elegant circular container -->
     <div id="loading" style="position: fixed; top: var(--header-height); left: 0; right: 0; bottom: 0; z-index: 1000; background-color: white; margin: 0; padding: 0;"
       class="d-flex align-items-center justify-content-center">
-      <div
-        style="width: min(30vw, 30vh); height: min(30vw, 30vh); min-width: 250px; min-height: 250px; ;border-radius: 50%; overflow: hidden; background: floralwhite;"
+      <div style="width: min(30vw, 30vh); height: min(30vw, 30vh); min-width: 250px; min-height: 250px; ;border-radius: 50%; overflow: hidden; background: floralwhite;"
         class="d-flex align-items-center justify-content-center">
         <div class="text-center">
           <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem; color: #8B4513 !important;" role="status">
@@ -89,13 +88,44 @@
       style="filter: brightness(0) saturate(100%) invert(50%) sepia(5%) saturate(388%) hue-rotate(314deg) brightness(89%) contrast(87%);">
   </a>
 
-  <footer id="footer" class="bg-light footer mt-auto py-1 d-flex flex-wrap justify-content-evenly border-top">
-    <div class="ms-2" style="margin: auto 0;">
-      <span class="text-muted" style="margin-top: auto; font-size: small;">
-        <span>© 2025 Christophe Thiebaud</span>
-      </span>
-    </div>
-  </footer>
+  <!DOCTYPE html>
+  <html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Footer Test</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div style="height: 80vh;"></div>
+
+    <footer id="footer" class="bg-light footer mt-auto py-1 d-flex justify-content-center border-top position-relative">
+      <div class="text-center" style="margin: auto 0;">
+        <span class="text-muted" style="margin-top: auto; font-size: small; display: flex; align-items: center; gap: .5rem;">
+          <span>©</span>
+          <span>2025 Christophe Thiebaud</span>
+          <a href="https://github.com/orgs/musicollator/repositories" target="_blank" rel="noopener noreferrer" class="text-muted" title="GitHub">
+            <img src="media/github-mark.svg" width="16" height="16" alt="GitHub" style="vertical-align: middle; margin-top: -2px;">
+          </a>
+        </span>
+      </div>
+      <div class="position-absolute end-0 me-2 d-none d-md-block" style="margin: auto 0; top: 50%; transform: translateY(-50%);">
+        <span class="text-muted" style="margin-top: auto; font-size: small; display: flex; align-items: center; gap: 1rem;">
+          <span>Made with:</span>
+          <span><a href="https://lilypond.org/" target="_blank" rel="noopener noreferrer" class="text-muted">LilyPond</a></span>
+          <span>&</span>
+          <span><a href="https://claude.ai/" target="_blank" rel="noopener noreferrer" class="text-muted">Claude.ai</a></span>
+          <span>&</span>
+          <span>❤️</span>
+        </span>
+      </div>
+    </footer>
+
+  </body>
+
+  </html>
 
   <!-- Load menu.js before index.js -->
   <script type="module" src="index.js"></script>
