@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BWV Siegel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            min-height: 100vh;
+            background: #faf8f3;
+            padding: 2rem;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            position: absolute;
+            top: 16.67vh;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #6b7a8f;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #a8b5c4;
+            margin-bottom: 3rem;
+            font-weight: 400;
+        }
+
+        .siegel-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(90vw, 90vh, 800px);
+            height: min(90vw, 90vh, 800px);
+            border-radius: 50%;
+            background: transparent !important;
+            z-index: 1;
+        }
+
+        bwv-siegel {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="title">JSB Siegel</h1>
+        <p class="subtitle">Infinite JS Bach Seal Animation</p>
+    </div>
+
+    <div class="siegel-container">
+        <bwv-siegel quantization="8" auto-start></bwv-siegel>
+    </div>
+
+    <script type="module" src="bwv-siegel/exports/bwv-siegel.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const siegel = document.querySelector('bwv-siegel');
+
+            setInterval(() => {
+                if (siegel?.status && !siegel.status.isRunning) {
+                    siegel.start();
+                }
+            }, 10000);
+        });
+    </script>
+</body>
+
+</html>
