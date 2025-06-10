@@ -57,11 +57,11 @@ export class Synchronisator {
     // Callbacks
     this.onBarChange = null; // Callback for when bar changes
     
-    console.log('🎼 Synchronisator initializing with data:', {
-      meta: this.syncData.meta,
-      flowItems: this.syncData.flow?.length,
-      configTitle: this.config.workInfo?.title
-    });
+    // console.log('🎼 Synchronisator initializing with data:', {
+    //   meta: this.syncData.meta,
+    //   flowItems: this.syncData.flow?.length,
+    //   configTitle: this.config.workInfo?.title
+    // });
     
     this.initialize();
   }
@@ -74,13 +74,13 @@ export class Synchronisator {
     this.buildElementCaches();
     this.processNotes();
     this.setupChannelColorMapping();
-    console.log(`🎼 Synchronisator initialized: ${this.notes.length} notes, ${this.barElementsCache.size} bars`);
+    // console.log(`🎼 Synchronisator initialized: ${this.notes.length} notes, ${this.barElementsCache.size} bars`);
   }
 
   buildElementCaches() {
     // Cache bar elements
     const barElements = this.svg.querySelectorAll('[data-bar]');
-    console.log(`🔍 Found ${barElements.length} bar elements`);
+    // console.log(`🔍 Found ${barElements.length} bar elements`);
     
     barElements.forEach(element => {
       const barNumber = parseInt(element.getAttribute('data-bar'));
@@ -92,15 +92,15 @@ export class Synchronisator {
 
     // Cache note elements  
     const noteElements = this.svg.querySelectorAll('[data-ref]');
-    console.log(`🔍 Found ${noteElements.length} note elements with data-ref`);
+    // console.log(`🔍 Found ${noteElements.length} note elements with data-ref`);
     
     if (noteElements.length === 0) {
       console.warn('⚠️  No elements with data-ref found! Check SVG structure.');
       // Debug: show first few elements in SVG
       const allPaths = this.svg.querySelectorAll('path');
-      console.log('📋 First 3 path elements:', Array.from(allPaths).slice(0, 3).map(el => ({
-        attributes: Object.fromEntries(Array.from(el.attributes).map(attr => [attr.name, attr.value]))
-      })));
+      // console.log('📋 First 3 path elements:', Array.from(allPaths).slice(0, 3).map(el => ({
+      //   attributes: Object.fromEntries(Array.from(el.attributes).map(attr => [attr.name, attr.value]))
+      // })));
     }
 
     noteElements.forEach(element => {
@@ -111,7 +111,7 @@ export class Synchronisator {
       this.noteElementsCache.get(dataRef).push(element);
     });
 
-    console.log(`📊 Cached elements: ${this.barElementsCache.size} bars, ${this.noteElementsCache.size} unique note refs`);
+    // console.log(`📊 Cached elements: ${this.barElementsCache.size} bars, ${this.noteElementsCache.size} unique note refs`);
   }
 
   processNotes() {
@@ -133,42 +133,42 @@ export class Synchronisator {
         };
       });
 
-    console.log(`🎵 Processing ${flowNotes.length} notes from flow data`);
+    // console.log(`🎵 Processing ${flowNotes.length} notes from flow data`);
     
     // Debug first few notes with channel info
-    if (flowNotes.length > 0) {
-      console.log('📝 First 3 notes:', flowNotes.slice(0, 3).map(note => ({
-        startTick: note.startTick,
-        startTime: note.startTime.toFixed(3),
-        hrefs: note.hrefs,
-        channel: note.channel,
-        elementsFound: note.elements.length
-      })));
-    }
+    // if (flowNotes.length > 0) {
+    //   console.log('📝 First 3 notes:', flowNotes.slice(0, 3).map(note => ({
+    //     startTick: note.startTick,
+    //     startTime: note.startTime.toFixed(3),
+    //     hrefs: note.hrefs,
+    //     channel: note.channel,
+    //     elementsFound: note.elements.length
+    //   })));
+    // }
 
     // Check for notes with no elements
     const notesWithoutElements = flowNotes.filter(note => note.elements.length === 0);
     if (notesWithoutElements.length > 0) {
       console.warn(`⚠️  ${notesWithoutElements.length} notes have no matching SVG elements`);
-      console.log('🔍 Sample missing hrefs:', notesWithoutElements.slice(0, 5).map(n => n.hrefs));
+      // console.log('🔍 Sample missing hrefs:', notesWithoutElements.slice(0, 5).map(n => n.hrefs));
       
       // Show available data-ref values for comparison
-      const availableRefs = Array.from(this.noteElementsCache.keys()).slice(0, 10);
-      console.log('📋 Available data-ref values (first 10):', availableRefs);
+      // const availableRefs = Array.from(this.noteElementsCache.keys()).slice(0, 10);
+      // console.log('📋 Available data-ref values (first 10):', availableRefs);
     }
 
     // Sort by start time (notes should already be sorted by the Python script)
     this.notes = flowNotes.sort((a, b) => a.startTime - b.startTime);
     
     const notesWithElements = this.notes.filter(note => note.elements.length > 0);
-    console.log(`✅ ${notesWithElements.length}/${this.notes.length} notes have matching SVG elements`);
+    // console.log(`✅ ${notesWithElements.length}/${this.notes.length} notes have matching SVG elements`);
     
     // Log channel distribution
-    const channelCounts = {};
-    this.notes.forEach(note => {
-      channelCounts[note.channel] = (channelCounts[note.channel] || 0) + 1;
-    });
-    console.log('🎨 Channel distribution:', channelCounts);
+    // const channelCounts = {};
+    // this.notes.forEach(note => {
+    //   channelCounts[note.channel] = (channelCounts[note.channel] || 0) + 1;
+    // });
+    // console.log('🎨 Channel distribution:', channelCounts);
     
     this.resetNoteState();
   }
@@ -192,7 +192,7 @@ export class Synchronisator {
           }
         }
         
-        console.log('🎨 Using channel statistics from meta.channels:', this.syncData.meta.channels);
+        // console.log('🎨 Using channel statistics from meta.channels:', this.syncData.meta.channels);
         
         // Create mapping using the intelligent system from channel2colour.js
         this.channelColorMap = createChannelColorMapping(channelData);
@@ -208,11 +208,11 @@ export class Synchronisator {
         });
 
         // Log the mapping results with channel stats
-        if (this.channelColorMap.size > 0) {
-          logChannelMapping(this.channelColorMap, channelData);
-        } else {
-          console.log('🎵 No channel mapping applied (single channel or no channel data)');
-        }
+        // if (this.channelColorMap.size > 0) {
+        //   logChannelMapping(this.channelColorMap, channelData);
+        // } else {
+        //   console.log('🎵 No channel mapping applied (single channel or no channel data)');
+        // }
         
       } catch (error) {
         console.error('🚨 Error setting up channel color mapping from meta:', error);
@@ -226,7 +226,7 @@ export class Synchronisator {
 
   fallbackChannelMapping() {
     // Fallback: use raw channel numbers
-    console.log('🎨 Using fallback channel mapping (raw channel numbers)');
+    // console.log('🎨 Using fallback channel mapping (raw channel numbers)');
     this.notes.forEach(note => {
       note.elements.forEach(element => {
         element.classList.add(`channel-${note.channel}`);
@@ -305,7 +305,7 @@ export class Synchronisator {
     this.isPlaying = true;
     this.syncLoop();
     
-    console.log('🎵 Playback started');
+    // console.log('🎵 Playback started');
   }
 
   stop() {
@@ -321,7 +321,7 @@ export class Synchronisator {
     this.hideAllBars();
     this.resetNoteState();
     
-    console.log('⏹️ Playback stopped');
+    // console.log('⏹️ Playback stopped');
   }
 
   seek(targetTime) {
@@ -341,7 +341,7 @@ export class Synchronisator {
     const currentBar = this.getCurrentBar(visualTime);
     this.showBar(currentBar);
     
-    console.log(`⏭️ Seeked to ${targetTime.toFixed(2)}s (bar ${currentBar})`);
+    // console.log(`⏭️ Seeked to ${targetTime.toFixed(2)}s (bar ${currentBar})`);
   }
 
   resetNoteState() {
@@ -381,14 +381,14 @@ export class Synchronisator {
     });
 
     // Log activity (but throttle to avoid spam)
-    if (activatedCount > 0 || deactivatedCount > 0) {
-      console.log(`🎵 @${visualTime.toFixed(2)}s: +${activatedCount} -${deactivatedCount} notes (${this.activeNotes.length} active, ${this.remainingNotes.length} remaining)`);
-    }
+    // if (activatedCount > 0 || deactivatedCount > 0) {
+    //   console.log(`🎵 @${visualTime.toFixed(2)}s: +${activatedCount} -${deactivatedCount} notes (${this.activeNotes.length} active, ${this.remainingNotes.length} remaining)`);
+    // }
 
     // Update bar visibility
     const currentBar = this.getCurrentBar(visualTime);
     if (currentBar !== this.currentVisibleBar) {
-      console.log(`🎼 Bar change: ${this.currentVisibleBar} → ${currentBar}`);
+      // console.log(`🎼 Bar change: ${this.currentVisibleBar} → ${currentBar}`);
       this.showBar(currentBar);
     }
 
@@ -408,18 +408,18 @@ export class Synchronisator {
     // Use mapped color index instead of raw channel
     const colorIndex = this.channelColorMap.get(note.channel) ?? note.channel;
     
-    console.log(`🌟 Highlighting note: ${note.hrefs.join(', ')} (channel ${note.channel} → color ${colorIndex}, ${note.elements.length} elements)`);
+    // console.log(`🌟 Highlighting note: ${note.hrefs.join(', ')} (channel ${note.channel} → color ${colorIndex}, ${note.elements.length} elements)`);
     
     note.elements.forEach(element => {
       element.classList.add('active');
       // Note: channel class was already added during initialization
-      console.log(`  ✅ Added 'active' class to:`, element.getAttribute('data-ref'));
+      // console.log(`  ✅ Added 'active' class to:`, element.getAttribute('data-ref'));
     });
   }
 
   unhighlightNote(note) {
     const colorIndex = this.channelColorMap.get(note.channel) ?? note.channel;
-    console.log(`💫 Unhighlighting note: ${note.hrefs.join(', ')} (channel ${note.channel} → color ${colorIndex})`);
+    // console.log(`💫 Unhighlighting note: ${note.hrefs.join(', ')} (channel ${note.channel} → color ${colorIndex})`);
     
     note.elements.forEach(element => {
       element.classList.remove('active');

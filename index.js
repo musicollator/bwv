@@ -5,9 +5,7 @@ import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour
 // Import BWV navigation menu system
 import { initializeBWVNavigation, adjustBWVButtonLayout } from './js/menu.js';
 
-
 import MusicalHighlighter, { quickHighlight, FuguePresets } from './js/musical-highlighter.js';
-
 
 // =============================================================================
 // WERK PARAMETER PROCESSING
@@ -228,11 +226,11 @@ async function loadConfiguration() {
     CONFIG.files.syncPath = `${basePath}${workId}.yaml`;         // Unified timing data
     CONFIG.files.audioPath = `${basePath}${CONFIG.files.audioPath}`;
 
-    console.log('📁 File paths configured:', {
-      svgPath: CONFIG.files.svgPath,
-      syncPath: CONFIG.files.syncPath,
-      audioPath: CONFIG.files.audioPath
-    });
+    // console.log('📁 File paths configured:', {
+    //   svgPath: CONFIG.files.svgPath,
+    //   syncPath: CONFIG.files.syncPath,
+    //   audioPath: CONFIG.files.audioPath
+    // });
 
     applyConfiguration();
     return CONFIG;
@@ -468,14 +466,14 @@ async function setup() {
         if (!r.ok) throw new Error(`Failed to load sync data: ${CONFIG.files.syncPath}`);
         return r.text();
       }).then(yamlText => {
-        console.log('📄 Raw YAML loaded, parsing...');
+        // console.log('📄 Raw YAML loaded, parsing...');
         const parsed = jsyaml.load(yamlText);
-        console.log('✅ YAML parsed successfully:', {
-          hasMeta: !!parsed.meta,
-          hasFlow: !!parsed.flow,
-          metaKeys: parsed.meta ? Object.keys(parsed.meta) : 'none',
-          flowLength: parsed.flow ? parsed.flow.length : 0
-        });
+        // console.log('✅ YAML parsed successfully:', {
+        //   hasMeta: !!parsed.meta,
+        //   hasFlow: !!parsed.flow,
+        //   metaKeys: parsed.meta ? Object.keys(parsed.meta) : 'none',
+        //   flowLength: parsed.flow ? parsed.flow.length : 0
+        // });
 
         // Validate structure
         if (!parsed.meta) {
@@ -524,23 +522,23 @@ async function setup() {
     initializeMeasureHighlighter();
 
     // Initialize BWV navigation menu system
-    console.log('🚀 Starting BWV navigation initialization...');
+    // console.log('🚀 Starting BWV navigation initialization...');
     await initializeBWVNavigation();
-    console.log('✅ BWV navigation initialization complete');
+    // console.log('✅ BWV navigation initialization complete');
 
-    console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${sync.getStats().totalNotes} notes, ${sync.barElementsCache.size} bars`);
-    console.log('🔍 Debug: Type sync.debug() in console for detailed info');
-    console.log('🧪 Debug: Type sync.testHighlight("test-main.ly:14:23") to test highlighting');
-    console.log('🎨 Debug: Check if .active CSS class exists and is visible');
-    console.log('🎵 BWV Player fully loaded and ready!');
+    // console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${sync.getStats().totalNotes} notes, ${sync.barElementsCache.size} bars`);
+    // console.log('🔍 Debug: Type sync.debug() in console for detailed info');
+    // console.log('🧪 Debug: Type sync.testHighlight("test-main.ly:14:23") to test highlighting');
+    // console.log('🎨 Debug: Check if .active CSS class exists and is visible');
+    // console.log('🎵 BWV Player fully loaded and ready!');
 
     // Show the interface
     checkScrollButtonVisibility();
 
     // Adjust BWV button layout after navigation is fully initialized
-    console.log('⏱️  Scheduling BWV button layout adjustment...');
+    // console.log('⏱️  Scheduling BWV button layout adjustment...');
     setTimeout(() => {
-      console.log('⏱️  Timeout fired, calling adjustBWVButtonLayout');
+      // console.log('⏱️  Timeout fired, calling adjustBWVButtonLayout');
       adjustBWVButtonLayout();
     }, 100);
 

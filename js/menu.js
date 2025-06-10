@@ -56,7 +56,7 @@ class BWVNavigationMenu {
   }
 
   createNavigationButtons() {
-    console.log('🎯 createNavigationButtons called');
+    // console.log('🎯 createNavigationButtons called');
 
     const container = document.getElementById('bwv-buttons-container');
     const loadingDiv = document.getElementById('bwv-navigation-loading');
@@ -66,7 +66,7 @@ class BWVNavigationMenu {
       return;
     }
 
-    console.log(`🎯 Container found, available works: ${this.availableWorks.length}`);
+    // console.log(`🎯 Container found, available works: ${this.availableWorks.length}`);
 
     // Hide container initially to prevent layout flash
     container.style.visibility = 'hidden';
@@ -91,17 +91,17 @@ class BWVNavigationMenu {
       button.textContent = displayText;
 
       container.appendChild(button);
-      console.log(`🎯 Created button: ${displayText}`);
+      // console.log(`🎯 Created button: ${displayText}`);
     });
 
-    console.log(`📱 Created ${this.availableWorks.length} navigation buttons`);
+    // console.log(`📱 Created ${this.availableWorks.length} navigation buttons`);
 
     // Force a reflow to ensure buttons are rendered
     container.offsetWidth;
 
     // Log final button count
     const finalButtons = container.querySelectorAll('.btn');
-    console.log(`🎯 Final button count in DOM: ${finalButtons.length}`);
+    // console.log(`🎯 Final button count in DOM: ${finalButtons.length}`);
   }
 
   showLoadingError(message) {
@@ -196,13 +196,13 @@ class BWVNavigationMenu {
         wikiElement.style.pointerEvents = 'all';
 
         wikiElement.addEventListener('click', (e) => {
-          console.log('🔗 Wikipedia element clicked!');
+          // console.log('🔗 Wikipedia element clicked!');
           e.preventDefault();
           e.stopPropagation();
 
           // Get Wikipedia URL from global CONFIG
           if (window.CONFIG?.workInfo?.externalURL) {
-            console.log('🔗 Opening Wikipedia:', window.CONFIG.workInfo.externalURL);
+            // console.log('🔗 Opening Wikipedia:', window.CONFIG.workInfo.externalURL);
             window.open(window.CONFIG.workInfo.externalURL, '_blank', 'noopener,noreferrer');
           } else {
             console.warn('🔗 No Wikipedia URL found in CONFIG');
@@ -334,7 +334,7 @@ class BWVNavigationMenu {
 // =============================================================================
 
 function adjustBWVButtonLayout() {
-  console.log('🔧 adjustBWVButtonLayout called');
+  // console.log('🔧 adjustBWVButtonLayout called');
 
   const container = document.getElementById('bwv-buttons-container');
   if (!container) {
@@ -343,7 +343,7 @@ function adjustBWVButtonLayout() {
   }
 
   const buttons = container.querySelectorAll('.btn[data-work-id]');
-  console.log(`🔧 Found ${buttons.length} BWV buttons in container`);
+  // console.log(`🔧 Found ${buttons.length} BWV buttons in container`);
 
   if (buttons.length === 0) {
     console.warn('❌ No buttons found in container');
@@ -378,12 +378,12 @@ function adjustBWVButtonLayout() {
   // Force a reflow
   container.offsetWidth;
 
-  console.log(`🔧 Container width: ${container.scrollWidth}px, Window width: ${window.innerWidth}px`);
+  // console.log(`🔧 Container width: ${container.scrollWidth}px, Window width: ${window.innerWidth}px`);
 
   // Check if container exceeds viewport width (with small buffer for margins/padding)
   const buffer = 20;
   if (container.scrollWidth > (window.innerWidth - buffer)) {
-    console.log('🔧 Container too wide (including buffer), removing BWV prefix');
+    // console.log('🔧 Container too wide (including buffer), removing BWV prefix');
 
     // Step 1: Remove "BWV " prefix from all buttons
     buttons.forEach(btn => {
@@ -408,22 +408,22 @@ function adjustBWVButtonLayout() {
     // Force another reflow
     container.offsetWidth;
 
-    console.log(`🔧 After removing BWV - Container width: ${container.scrollWidth}px`);
+    // console.log(`🔧 After removing BWV - Container width: ${container.scrollWidth}px`);
 
     // Check again after removing BWV (still with buffer)
     if (container.scrollWidth > (window.innerWidth - buffer)) {
-      console.log('🔧 Still too wide, enabling horizontal scroll');
+      // console.log('🔧 Still too wide, enabling horizontal scroll');
       // Step 2: Enable horizontal scroll
       container.style.justifyContent = 'flex-start';
       container.style.overflowX = 'auto';
     }
   } else {
-    console.log('🔧 Container fits, no adjustment needed');
+    // console.log('🔧 Container fits, no adjustment needed');
   }
 
   // Show the container now that layout is finalized
   container.style.visibility = 'visible';
-  console.log('✨ BWV button layout finalized and made visible');
+  // console.log('✨ BWV button layout finalized and made visible');
 }
 
 // =============================================================================

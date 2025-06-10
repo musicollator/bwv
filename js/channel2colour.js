@@ -191,21 +191,21 @@ export function logChannelMapping(channelColorMap, noteData) {
   const sortedChannels = Array.from(channelColorMap.entries())
     .sort((a, b) => a[1] - b[1]); // Sort by color index
 
-  console.log('🎵 Intelligent MIDI Channel → Color Mapping (from CSS):');
+  // console.log('🎵 Intelligent MIDI Channel → Color Mapping (from CSS):');
   sortedChannels.forEach(([channel, colorIndex]) => {
     const stats = channelStats.get(channel);
     const { colorName, voice, actualColor } = getActualCSSColor(colorIndex);
     const avgPitch = ((stats.pitchRange.min + stats.pitchRange.max) / 2).toFixed(1);
     const pitchInfo = `pitch ${stats.pitchRange.min}-${stats.pitchRange.max} (avg: ${avgPitch})`;
     
-    console.log(`  Channel ${channel} → %c${colorName} ${actualColor}%c: ${stats.count} notes (${pitchInfo}) [${voice}]`, 
-                `color: ${colorName}; font-weight: bold;`, 
-                'color: inherit;');
+    // console.log(`  Channel ${channel} → %c${colorName} ${actualColor}%c: ${stats.count} notes (${pitchInfo}) [${voice}]`, 
+    //             `color: ${colorName}; font-weight: bold;`, 
+    //             'color: inherit;');
   });
   
   const totalChannels = channelColorMap.size;
   const totalNotes = Array.from(channelStats.values()).reduce((sum, stats) => sum + stats.count, 0);
-  console.log(`🎼 Total: ${totalChannels} channels, ${totalNotes} notes`);
+  // console.log(`🎼 Total: ${totalChannels} channels, ${totalNotes} notes`);
 }
 
 /**
