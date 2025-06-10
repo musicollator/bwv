@@ -1,43 +1,44 @@
 :root {
   --header-height: 104px;
-  
+
   /* 🎼 Bach Color Palette - Easy to modify! */
-  --bach-cream: #faf8f3;        /* Primary background */
-  --bach-taupe: #d4c4a8;        /* Secondary/controls */
-  --bach-taupe-50: rgba(212, 196, 168, 0.5);  /* 50% opacity taupe */
-  --bach-brown: #8b6f47;        /* Active/selected */
+  --bach-cream: #faf8f3; /* Primary background */
+  --bach-taupe: #d4c4a8; /* Secondary/controls */
+  --bach-taupe-50: rgba(212, 196, 168, 0.5); /* 50% opacity taupe */
+  --bach-brown: #8b6f47; /* Active/selected */
   --bach-mid: #775c41;
-  --bach-dark: #5a4037;         /* Text/borders */
-  --bach-gold: #c8a882;         /* Special accent */
+  --bach-dark: #5a4037; /* Text/borders */
+  --bach-gold: #c8a882; /* Special accent */
 
   /* 🎵 Voice Color System - Single Source of Truth */
   --voice-0-color: coral;
-  --voice-0-name: 'SOPRANO';
-  --voice-0-description: 'highest voice - warm, bright';
-  
+  --voice-0-color-dark: #c63500; /* coral → orangered */
+  --voice-0-name: "SOPRANO";
+
   --voice-1-color: lightgreen;
-  --voice-1-name: 'BASS';
-  --voice-1-description: 'lowest voice - solid, grounding';
-  
+  --voice-1-color-dark: darkgreen; /* lightgreen → darkgreen */
+  --voice-1-name: "BASS";
+
   --voice-2-color: dodgerblue;
-  --voice-2-name: 'ALTO';
-  --voice-2-description: 'second highest - clear, supporting';
-  
-  --voice-3-color: lightpink;
-  --voice-3-name: 'TENOR';
-  --voice-3-description: 'second lowest - warm, melodic';
-  
-  --voice-4-color: mediumpurple;
-  --voice-4-name: 'VOICE5';
-  --voice-4-description: 'additional voices';
-  
-  --voice-5-color: lightsalmon;
-  --voice-5-name: 'VOICE6';
-  --voice-5-description: 'additional voices';
+  --voice-2-color-dark: navy; /* dodgerblue → navy */
+  --voice-2-name: "ALTO";
+
+  --voice-3-color: gold;
+  --voice-3-color-dark: #766300; /* gold → saddlebrown */
+  --voice-3-name: "TENOR";
+
+  --voice-4-color: darkred;
+  --voice-4-color-dark: #500000; /* darkred → very dark red */
+  --voice-4-name: "VOICE5";
+
+  --voice-5-color: orchid;
+  --voice-5-color-dark: indigo; /* orchid → indigo */
+  --voice-5-name: "VOICE6";
 }
 
 /* Sticky footer layout */
-html, body {
+html,
+body {
   height: 100%;
 }
 
@@ -61,104 +62,103 @@ body {
   scroll-margin-top: var(--header-height);
 }
 
-#svg-container>svg {
+#svg-container > svg {
   height: auto;
   max-width: 100%;
 }
 
 /* Updated for new data-ref structure - basic note appearance */
-#svg-container>svg path[data-ref] {
+#svg-container > svg path[data-ref] {
   color: black;
 }
 
-/* Note highlighting transitions - slow fade out for smooth visual */
-#svg-container>svg path[data-ref] {
-  transition: fill 1.25s ease, filter 1.25s ease, transform 1.25s ease;
+/* SLOW transitions by default (when becoming inactive) */
+#svg-container > svg path[data-ref] {
+  transition: fill 1.50s ease, filter 1.50s ease, transform 1.50s ease,
+    stroke 1.50s ease, stroke-width 1.50s ease, stroke-opacity 1.50s ease;
+
+  /* Default values for inactive state */
+  transform: scale(1);
+  transform-box: fill-box;
+  transform-origin: center;
+  stroke-width: 0;
+  stroke-opacity: 0;
 }
 
-/* Fast fade in for immediate visual feedback */
-#svg-container>svg path[data-ref].active {
-  transition: fill 0.15s linear, filter 0.15s linear, transform 0.15s linear;
-}
+/* FAST transitions when becoming active */
+#svg-container > svg path[data-ref].active {
+  transition: fill 0.15s linear, filter 0.15s linear, transform 0.15s linear,
+    stroke 0.15s linear, stroke-width 0.15s linear, stroke-opacity 0.15s linear;
 
-/* Alternative approach: Use visual effects instead of scaling if transforms are problematic */
-body.playing #svg-container>svg path[data-ref].active {
-  /* Try animation first */
-  animation: noteSwellPulse 0.15s ease-out forwards;
-  
-  /* Backup: If scaling is still problematic, use other visual effects */
-  /*
-  filter: drop-shadow(0 0 3px currentColor) brightness(1.2);
-  stroke-width: 2;
-  transition: filter 0.15s ease, stroke-width 0.15s ease;
-  */
+  /* Active state values */
+  transform: scale(1.125);
+  transform-box: fill-box;
+  transform-origin: center;
+  stroke-width: 0.125;
+  stroke-opacity: 0.667;
 }
-
-@keyframes noteSwellPulse {
-  0% { 
-    transform: scale(1);
-    transform-box: fill-box;
-    transform-origin: center;
-  }
-  100% { 
-    transform: scale(1.25);
-    transform-box: fill-box;
-    transform-origin: center;
-  }
-}
-
-/* If scaling continues to be problematic, uncomment this alternative:
-body.playing #svg-container>svg path[data-ref].active {
-  filter: drop-shadow(0 0 4px currentColor) drop-shadow(0 0 8px currentColor) brightness(1.3);
-  transition: filter 0.15s ease;
-  animation: none;
-}
-*/
 
 /* Bar highlights */
-body.playing:not(.seeking) #svg-container>svg rect[data-bar] {
-  fill: var(--bach-taupe) !important;  /* Override SVG's fill:none */
+body.playing:not(.seeking) #svg-container > svg rect[data-bar] {
+  fill: var(--bach-taupe) !important; /* Override SVG's fill:none */
   fill-opacity: 0.3 !important;
   filter: none;
 }
 
-body:not(.playing) #svg-container>svg rect[data-bar] {
+body:not(.playing) #svg-container > svg rect[data-bar] {
   visibility: hidden;
 }
 
-body.seeking #svg-container>svg rect[data-bar] {
+body.seeking #svg-container > svg rect[data-bar] {
   filter: blur(1rem) drop-shadow(0 0 0.2rem var(--bach-dark));
 }
 
+/* Option 1: Brightness Flash - Very dramatic */
+@keyframes noteFlash {
+  0% {
+    filter: brightness(5) saturate(0) 
+  }
+  100% {
+    filter: brightness(1)
+  }
+}
+
 /* Channel-specific colors - updated for new data-ref structure */
-body.playing #svg-container>svg path[data-ref].active.channel-0 {
+body.playing #svg-container > svg path[data-ref].active.channel-0 {
   fill: var(--voice-0-color) !important;
-  filter: drop-shadow(0 0 5px var(--voice-0-color)) drop-shadow(0 0 10px var(--voice-0-color));
+  stroke: var(--voice-0-color-dark) !important;
 }
 
-body.playing #svg-container>svg path[data-ref].active.channel-1 {
+body.playing #svg-container > svg path[data-ref].active.channel-1 {
   fill: var(--voice-1-color) !important;
-  filter: drop-shadow(0 0 5px var(--voice-1-color)) drop-shadow(0 0 10px var(--voice-1-color));
+  stroke: var(--voice-1-color-dark) !important;
 }
 
-body.playing #svg-container>svg path[data-ref].active.channel-2 {
+body.playing #svg-container > svg path[data-ref].active.channel-2 {
   fill: var(--voice-2-color) !important;
-  filter: drop-shadow(0 0 5px var(--voice-2-color)) drop-shadow(0 0 10px var(--voice-2-color));
+  stroke: var(--voice-2-color-dark) !important;
 }
 
-body.playing #svg-container>svg path[data-ref].active.channel-3 {
+body.playing #svg-container > svg path[data-ref].active.channel-3 {
   fill: var(--voice-3-color) !important;
-  filter: drop-shadow(0 0 5px var(--voice-3-color)) drop-shadow(0 0 10px var(--voice-3-color));
+  stroke: var(--voice-3-color-dark) !important;
 }
 
-body.playing #svg-container>svg path[data-ref].active.channel-4 {
+body.playing #svg-container > svg path[data-ref].active.channel-4 {
   fill: var(--voice-4-color) !important;
-  filter: drop-shadow(0 0 5px var(--voice-4-color)) drop-shadow(0 0 10px var(--voice-4-color));
+  stroke: var(--voice-4-color-dark) !important;
 }
 
-body.playing #svg-container>svg path[data-ref].active.channel-5 {
+body.playing #svg-container > svg path[data-ref].active.channel-5 {
   fill: var(--voice-5-color) !important;
-  filter: drop-shadow(0 0 5px var(--voice-5-color)) drop-shadow(0 0 10px var(--voice-5-color));
+  stroke: var(--voice-5-color-dark) !important;
+}
+
+body.playing #svg-container > svg path[data-ref].active {
+  stroke-width: 0.125;
+  stroke-opacity: 0.667;
+  animation: noteFlash 0.2s ease-out;
+
 }
 
 /* Hide scroll-to-top button when playing or already at optimal position */
@@ -171,13 +171,13 @@ body.svg-at-top #button_scroll_to_top {
   background-color: var(--bach-taupe) !important;
   color: var(--bach-dark) !important;
   font-weight: normal;
-  font-size: .8rem;
+  font-size: 0.8rem;
   transition: filter 1s ease, width 1s ease;
 }
 
 body.seeking #bar_spy {
   filter: drop-shadow(0 0 0.2rem var(--bach-dark));
-  transition: filter .1s ease, width .1s ease;
+  transition: filter 0.1s ease, width 0.1s ease;
 }
 
 body.seeking #bar_spy :first-child {
@@ -289,7 +289,6 @@ footer#footer {
 }
 
 /* Target the specific path structure */
-#svg-container>svg path[fill="none"][stroke="none"] {
+#svg-container > svg path[fill="none"][stroke="none"] {
   display: none !important;
 }
-
