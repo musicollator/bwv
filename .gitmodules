@@ -21,3 +21,6 @@
 [submodule "bwv-siegel"]
 	path = bwv-siegel
 	url = https://github.com/musicollator/bwv-siegel.git
+[submodule "bwv846"]
+	path = bwv846
+	url = https://github.com/musicollator/bwv846.git
