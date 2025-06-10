@@ -1,3 +1,11 @@
+/* =============================================================================
+   🎼 BACH SCORE VIEWER - COMPLETE STYLESHEET
+   ============================================================================= */
+
+/* =============================================================================
+   ROOT VARIABLES & COLOR SYSTEM
+   ============================================================================= */
+
 :root {
   --header-height: 104px;
 
@@ -36,7 +44,10 @@
   --voice-5-name: "VOICE6";
 }
 
-/* Sticky footer layout */
+/* =============================================================================
+   LAYOUT & STRUCTURE
+   ============================================================================= */
+
 html,
 body {
   height: 100%;
@@ -50,12 +61,14 @@ body {
   padding-top: var(--header-height); /* Compensate for fixed header */
 }
 
-/* Main content area grows to fill available space */
 .main-content {
   flex: 1;
 }
 
-/* SVG container positioning and scroll behavior */
+/* =============================================================================
+   SVG CONTAINER & NOTE ANIMATIONS
+   ============================================================================= */
+
 #svg-container {
   display: grid;
   place-items: start center;
@@ -67,63 +80,62 @@ body {
   max-width: 100%;
 }
 
-/* Updated for new data-ref structure - basic note appearance */
+/* Basic note appearance */
 #svg-container > svg path[data-ref] {
   color: black;
 }
 
-/* SLOW transitions by default (when becoming inactive) */
-#svg-container > svg path[data-ref] {
-  transition: fill 1.50s ease, filter 1.50s ease, transform 1.50s ease,
-    stroke 1.50s ease, stroke-width 1.50s ease, stroke-opacity 1.50s ease;
-
-  /* Default values for inactive state */
-  transform: scale(1);
-  transform-box: fill-box;
-  transform-origin: center;
-  stroke-width: 0;
-  stroke-opacity: 0;
+/* Hide invisible paths */
+#svg-container > svg path[fill="none"][stroke="none"] {
+  display: none !important;
 }
 
-/* FAST transitions when becoming active */
-#svg-container > svg path[data-ref].active {
-  transition: fill 0.15s linear, filter 0.15s linear, transform 0.15s linear,
-    stroke 0.15s linear, stroke-width 0.15s linear, stroke-opacity 0.15s linear;
-
-  /* Active state values */
-  transform: scale(1.125);
-  transform-box: fill-box;
-  transform-origin: center;
-  stroke-width: 0.125;
-  stroke-opacity: 0.667;
-}
-
-/* Bar highlights */
-body.playing:not(.seeking) #svg-container > svg rect[data-bar] {
-  fill: var(--bach-taupe) !important; /* Override SVG's fill:none */
-  fill-opacity: 0.3 !important;
-  filter: none;
-}
-
-body:not(.playing) #svg-container > svg rect[data-bar] {
-  visibility: hidden;
-}
-
-body.seeking #svg-container > svg rect[data-bar] {
-  filter: blur(1rem) drop-shadow(0 0 0.2rem var(--bach-dark));
-}
-
-/* Option 1: Brightness Flash - Very dramatic */
-@keyframes noteFlash {
-  0% {
-    filter: brightness(5) saturate(0) 
+/* MOBILE: NO animations - instant color changes only */
+@media (max-width: 1024px), (hover: none), (pointer: coarse) {
+  #svg-container > svg path[data-ref] {
+    transition: none;
   }
-  100% {
-    filter: brightness(1)
+  
+  #svg-container > svg path[data-ref].active {
+    stroke-width: 0.125;
+    stroke-opacity: 0.667;
   }
 }
 
-/* Channel-specific colors - updated for new data-ref structure */
+/* DESKTOP: Full animations with effects */
+@media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  @keyframes noteFlash {
+    0% {
+      filter: brightness(5) saturate(0);
+    }
+    100% {
+      filter: brightness(1);
+    }
+  }
+  
+  #svg-container > svg path[data-ref] {
+    transition: fill 1.50s ease, filter 1.50s ease, transform 1.50s ease,
+      stroke 1.50s ease, stroke-width 1.50s ease, stroke-opacity 1.50s ease;
+    transform: scale(1);
+    transform-box: fill-box;
+    transform-origin: center;
+    stroke-width: 0;
+    stroke-opacity: 0;
+  }
+  
+  #svg-container > svg path[data-ref].active {
+    transition: fill 0.15s linear, filter 0.15s linear, transform 0.15s linear,
+      stroke 0.15s linear, stroke-width 0.15s linear, stroke-opacity 0.15s linear;
+    transform: scale(1.125);
+    transform-box: fill-box;
+    transform-origin: center;
+    stroke-width: 0.125;
+    stroke-opacity: 0.667;
+    animation: noteFlash 0.2s ease-out;
+  }
+}
+
+/* Channel colors (applies to both mobile and desktop) */
 body.playing #svg-container > svg path[data-ref].active.channel-0 {
   fill: var(--voice-0-color) !important;
   stroke: var(--voice-0-color-dark) !important;
@@ -154,12 +166,40 @@ body.playing #svg-container > svg path[data-ref].active.channel-5 {
   stroke: var(--voice-5-color-dark) !important;
 }
 
-body.playing #svg-container > svg path[data-ref].active {
-  stroke-width: 0.125;
-  stroke-opacity: 0.667;
-  animation: noteFlash 0.2s ease-out;
-
+/* Accessibility: Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  #svg-container > svg path[data-ref] {
+    transition: none !important;
+  }
+  
+  #svg-container > svg path[data-ref].active {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }
+
+/* =============================================================================
+   BAR HIGHLIGHTING
+   ============================================================================= */
+
+body.playing:not(.seeking) #svg-container > svg rect[data-bar] {
+  fill: var(--bach-taupe) !important; /* Override SVG's fill:none */
+  fill-opacity: 0.3 !important;
+  filter: none;
+}
+
+body:not(.playing) #svg-container > svg rect[data-bar] {
+  visibility: hidden;
+}
+
+body.seeking #svg-container > svg rect[data-bar] {
+  filter: blur(1rem) drop-shadow(0 0 0.2rem var(--bach-dark));
+}
+
+/* =============================================================================
+   UI CONTROLS & NAVIGATION
+   ============================================================================= */
 
 /* Hide scroll-to-top button when playing or already at optimal position */
 body.playing #button_scroll_to_top,
@@ -167,6 +207,7 @@ body.svg-at-top #button_scroll_to_top {
   visibility: hidden !important;
 }
 
+/* Bar spy (progress indicator) */
 #bar_spy {
   background-color: var(--bach-taupe) !important;
   color: var(--bach-dark) !important;
@@ -191,6 +232,7 @@ body.seeking #bar_spy :first-child {
   border-bottom-color: var(--bach-taupe-50) !important;
 }
 
+/* Footer */
 footer#footer {
   visibility: visible;
   z-index: 10;
@@ -233,7 +275,7 @@ footer#footer {
   cursor: default;
 }
 
-/* BWV Navigation - minimal custom styles (Bootstrap handles most of it) */
+/* BWV Navigation */
 #bwv-navigation {
   background: rgba(250, 248, 243, 0.9);
 }
@@ -286,9 +328,4 @@ footer#footer {
   background-color: var(--bach-dark);
   border-color: var(--bach-brown);
   color: white;
-}
-
-/* Target the specific path structure */
-#svg-container > svg path[fill="none"][stroke="none"] {
-  display: none !important;
 }
