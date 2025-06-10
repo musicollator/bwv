@@ -5,6 +5,10 @@ import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour
 // Import BWV navigation menu system
 import { initializeBWVNavigation, adjustBWVButtonLayout } from './js/menu.js';
 
+
+import MusicalHighlighter, { quickHighlight, FuguePresets } from './js/musical-highlighter.js';
+
+
 // =============================================================================
 // WERK PARAMETER PROCESSING
 // =============================================================================
@@ -205,6 +209,10 @@ let CONFIG = null;
 async function loadConfiguration() {
   try {
     const workId = processWerkParameter();
+    const element = document.getElementById('loading-werk');
+    if (element) {
+        element.innerHTML = workId;
+    }
     const configResponse = await fetch(`${workId}/exports/${workId}.config.yaml`);
 
     if (!configResponse.ok) {
@@ -303,7 +311,7 @@ function checkScrollButtonVisibility() {
 
 function scrollToBar(barNumber) {
   if (!sync) return;
-  
+
   const barElements = sync.barElementsCache.get(barNumber);
   if (!barElements || barElements.length === 0) return;
 
@@ -444,6 +452,9 @@ function applyMobileTimingAdjustment(config) {
 
 async function setup() {
   try {
+
+    window.highlighter = new MusicalHighlighter();
+    
     // Load configuration
     await loadConfiguration();
 
@@ -465,7 +476,7 @@ async function setup() {
           metaKeys: parsed.meta ? Object.keys(parsed.meta) : 'none',
           flowLength: parsed.flow ? parsed.flow.length : 0
         });
-        
+
         // Validate structure
         if (!parsed.meta) {
           throw new Error('Sync data missing "meta" section');
@@ -473,7 +484,7 @@ async function setup() {
         if (!parsed.flow) {
           throw new Error('Sync data missing "flow" section');
         }
-        
+
         return parsed;
       })
     ]);
@@ -496,10 +507,10 @@ async function setup() {
 
     // Initialize the unified synchronization system
     sync = new Synchronisator(syncData, audio, svgGlobal, CONFIG);
-    
+
     // Make synchronisator globally accessible for debugging
     window.sync = sync;
-    
+
     // Set up custom bar display callback
     sync.onBarChange = (barNumber) => {
       currentBarGlobal.innerText = barNumber;
@@ -525,7 +536,7 @@ async function setup() {
 
     // Show the interface
     checkScrollButtonVisibility();
-    
+
     // Adjust BWV button layout after navigation is fully initialized
     console.log('⏱️  Scheduling BWV button layout adjustment...');
     setTimeout(() => {
@@ -539,7 +550,7 @@ async function setup() {
     return;
   }
 
-  document.getElementById("loading")?.classList.add("d-none");
+  document.getElementById('loading')?.classList.add("d-none");
 }
 
 // =============================================================================

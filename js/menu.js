@@ -59,7 +59,7 @@ class BWVNavigationMenu {
     console.log('🎯 createNavigationButtons called');
 
     const container = document.getElementById('bwv-buttons-container');
-    const loadingDiv = document.getElementById('bwv-loading');
+    const loadingDiv = document.getElementById('bwv-navigation-loading');
 
     if (!container) {
       console.error('❌ BWV buttons container not found');
@@ -106,7 +106,7 @@ class BWVNavigationMenu {
 
   showLoadingError(message) {
     const container = document.getElementById('bwv-buttons-container');
-    const loadingDiv = document.getElementById('bwv-loading');
+    const loadingDiv = document.getElementById('bwv-navigation-loading');
 
     if (loadingDiv) {
       loadingDiv.className = 'text-warning small';

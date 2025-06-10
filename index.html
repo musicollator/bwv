@@ -27,7 +27,7 @@
       <div id="bwv-navigation" class="py-2" style="background-color: transparent;">
         <div id="bwv-buttons-container" class="d-flex justify-content-center gap-2" style="min-height: 31px;">
           <!-- BWV navigation buttons will be dynamically inserted here -->
-          <div id="bwv-loading" class="text-muted small"><!--Loading BWV navigation...-->&nbsp;</div>
+          <div id="bwv-navigation-loading" class="text-muted small"><!--Loading BWV navigation...-->&nbsp;</div>
         </div>
       </div>
       <div class="d-flex align-items-center justify-content-center position-relative  gap-2">
@@ -49,17 +49,14 @@
   <!-- Add missing main-content wrapper -->
   <div class="main-content" style="position: relative;">
 
-    <!-- Bootstrap loading animation in elegant circular container -->
+    <!-- Bootstrap loading animation -->
     <div id="loading" style="position: fixed; top: var(--header-height); left: 0; right: 0; bottom: 0; z-index: 1000; background-color: white; margin: 0; padding: 0;"
       class="d-flex align-items-center justify-content-center">
-      <div style="width: min(30vw, 30vh); height: min(30vw, 30vh); min-width: 250px; min-height: 250px; ;border-radius: 50%; overflow: hidden; background: floralwhite;"
-        class="d-flex align-items-center justify-content-center">
-        <div class="text-center">
-          <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem; color: #8B4513 !important;" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-          <div class="text-muted">Loading BWV...</div>
+      <div class="text-center">
+        <div class="spinner-border text-primary mb-3" style="width: 4rem; height: 4rem; color: #8B4513 !important;" role="status">
+          <span class="visually-hidden">Loading...</span>
         </div>
+        <div class="text-muted">Loading <span id="loading-werk"></span></div>
       </div>
     </div>
 
