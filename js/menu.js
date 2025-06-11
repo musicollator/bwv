@@ -11,6 +11,9 @@ class BWVNavigationMenu {
     this.minSwipeDistance = 50;
     this.isLoaded = false;
     this.isNavigating = false; // Prevent multiple simultaneous navigations
+
+    this.isSwipeActive = false;
+    this.swipeArrows = { left: null, right: null };
   }
 
   async init() {
@@ -19,7 +22,7 @@ class BWVNavigationMenu {
     this.createNavigationButtons();
     this.updateActiveState();
     this.attachEventListeners();
-    
+
     // Set up browser back/forward handling
     this.setupHistoryHandling();
   }
@@ -170,7 +173,7 @@ class BWVNavigationMenu {
           <img src="media/Wikipedia-logo-v2.svg" width="24" height="24" alt="Wikipedia">
         </span>
       `;
-      
+
       activeBtn.style.display = 'flex';
       activeBtn.style.alignItems = 'center';
       activeBtn.style.justifyContent = 'space-between';
@@ -207,6 +210,125 @@ class BWVNavigationMenu {
     }
   }
 
+  createSwipeArrows() {
+    this.isSwipeActive = true;
+
+    // Create left arrow
+    if (!this.swipeArrows.left) {
+      this.swipeArrows.left = document.createElement('div');
+      this.swipeArrows.left.innerHTML = '‹';
+      this.swipeArrows.left.style.cssText = `
+      position: fixed;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 48px;
+      color: var(--bach-gold, #daa520);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      z-index: 1000;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    `;
+      document.body.appendChild(this.swipeArrows.left);
+    }
+
+    // Create right arrow
+    if (!this.swipeArrows.right) {
+      this.swipeArrows.right = document.createElement('div');
+      this.swipeArrows.right.innerHTML = '›';
+      this.swipeArrows.right.style.cssText = `
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 48px;
+      color: var(--bach-gold, #daa520);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      z-index: 1000;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    `;
+      document.body.appendChild(this.swipeArrows.right);
+    }
+  }
+
+  updateSwipeArrows(currentX) {
+    const swipeDistance = currentX - this.touchStartX;
+    const threshold = 20; // Minimum movement to show arrows
+
+    if (Math.abs(swipeDistance) < threshold) {
+      // Hide both arrows if movement is too small
+      this.swipeArrows.left.style.opacity = '0';
+      this.swipeArrows.right.style.opacity = '0';
+      return;
+    }
+
+    if (swipeDistance > 0) {
+      // Swiping right (previous) - only show if we can go previous
+      if (this.canNavigatePrevious()) {
+        const opacity = Math.min(Math.abs(swipeDistance) / this.minSwipeDistance, 1);
+        this.swipeArrows.left.style.opacity = opacity;
+      } else {
+        this.swipeArrows.left.style.opacity = '0';
+      }
+      this.swipeArrows.right.style.opacity = '0';
+    } else {
+      // Swiping left (next) - only show if we can go next
+      if (this.canNavigateNext()) {
+        const opacity = Math.min(Math.abs(swipeDistance) / this.minSwipeDistance, 1);
+        this.swipeArrows.right.style.opacity = opacity;
+      } else {
+        this.swipeArrows.right.style.opacity = '0';
+      }
+      this.swipeArrows.left.style.opacity = '0';
+    }
+  }
+
+  hideSwipeArrows() {
+    this.isSwipeActive = false;
+
+    if (this.swipeArrows.left) {
+      this.swipeArrows.left.style.opacity = '0';
+    }
+    if (this.swipeArrows.right) {
+      this.swipeArrows.right.style.opacity = '0';
+    }
+  }
+
+  // NEW: Helper methods to check navigation bounds
+  canNavigatePrevious() {
+    const currentIndex = this.getCurrentWorkIndex();
+    return currentIndex > 0;
+  }
+
+  canNavigateNext() {
+    const currentIndex = this.getCurrentWorkIndex();
+    return currentIndex < this.availableWorks.length - 1;
+  }
+
+  // Enhanced handleSwipeGesture with bounds checking
+  handleSwipeGesture() {
+    const swipeDistance = this.touchEndX - this.touchStartX;
+
+    if (Math.abs(swipeDistance) < this.minSwipeDistance) {
+      return;
+    }
+
+    if (swipeDistance > 0) {
+      // Swiping right (previous) - only navigate if possible
+      if (this.canNavigatePrevious()) {
+        this.navigateToPrevious();
+      }
+    } else {
+      // Swiping left (next) - only navigate if possible
+      if (this.canNavigateNext()) {
+        this.navigateToNext();
+      }
+    }
+  }
+  
   attachEventListeners() {
     // Click events for navigation buttons
     document.addEventListener('click', (e) => {
@@ -219,13 +341,21 @@ class BWVNavigationMenu {
       }
     });
 
-    // Touch events for swipe gestures
     document.addEventListener('touchstart', (e) => {
       this.touchStartX = e.changedTouches[0].screenX;
+      this.createSwipeArrows();
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+      if (this.isSwipeActive) {
+        const currentX = e.changedTouches[0].screenX;
+        this.updateSwipeArrows(currentX);
+      }
     }, { passive: true });
 
     document.addEventListener('touchend', (e) => {
       this.touchEndX = e.changedTouches[0].screenX;
+      this.hideSwipeArrows();
       this.handleSwipeGesture();
     }, { passive: true });
 
@@ -308,9 +438,9 @@ class BWVNavigationMenu {
 
   async loadWorkDynamically(workId, pushToHistory = true) {
     if (this.isNavigating) return;
-    
+
     this.isNavigating = true;
-    
+
     try {
       // Show loading state on navigation buttons
       this.showNavigationLoading();
@@ -323,12 +453,12 @@ class BWVNavigationMenu {
       if (pushToHistory) {
         const url = new URL(window.location);
         url.searchParams.set('werk', workId.replace('bwv', ''));
-        
+
         // Push to browser history with state
         const title = `BWV ${workId.replace('bwv', '')} - Bach Werke Verzeichnis`;
         history.pushState(
-          { workId: workId }, 
-          title, 
+          { workId: workId },
+          title,
           url.toString()
         );
       }
@@ -338,7 +468,7 @@ class BWVNavigationMenu {
 
       // Update navigation visual state
       this.updateActiveState();
-      
+
       // Trigger any resize/layout adjustments
       if (typeof adjustBWVButtonLayout === 'function') {
         adjustBWVButtonLayout();
@@ -348,11 +478,11 @@ class BWVNavigationMenu {
 
     } catch (error) {
       console.error(`❌ Failed to load ${workId}:`, error);
-      
+
       // Revert to previous work on error
       this.updateCurrentWork(previousWorkId);
       this.showNavigationError(error.message);
-      
+
       // Revert URL if we changed it
       if (pushToHistory) {
         const url = new URL(window.location);
@@ -398,7 +528,7 @@ class BWVNavigationMenu {
 
   showNavigationError(message) {
     console.error('Navigation error:', message);
-    
+
     // Show error in the page if possible
     const alertDiv = document.createElement('div');
     alertDiv.className = 'alert alert-warning alert-dismissible fade show';
@@ -406,10 +536,10 @@ class BWVNavigationMenu {
       <strong>Navigation Error:</strong> ${message}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     const container = document.querySelector('.container-fluid') || document.body;
     container.insertBefore(alertDiv, container.firstChild);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => alertDiv.remove(), 5000);
   }
