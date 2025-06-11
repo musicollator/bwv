@@ -1,4 +1,4 @@
-// js/channel2colour.js - Reads voice colors from CSS (CSS is source of truth)
+// channel2colour.js - Reads voice colors from CSS (CSS is source of truth)
 // Maps MIDI channels to colors based on pitch range rather than channel number
 
 /**

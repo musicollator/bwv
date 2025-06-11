@@ -2,10 +2,10 @@
 import { Synchronisator } from './synchronisator.mjs';
 // Import intelligent channel to color mapping (reads from CSS)
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
-// Import BWV navigation menu system
-import { initializeBWVNavigation, adjustBWVButtonLayout } from './js/menu.js';
+// Import BWV navigation menu system  
+import { initializeBWVNavigation, adjustBWVButtonLayout } from '/js/menu.js';
 
-import MusicalHighlighter, { quickHighlight, FuguePresets } from './js/musical-highlighter.js';
+import MusicalHighlighter, { quickHighlight, FuguePresets } from '/js/musical-highlighter.js';
 
 // =============================================================================
 // WERK PARAMETER PROCESSING
@@ -134,13 +134,24 @@ class MeasureHighlighter {
     const structure = this.structures.get(structureName);
     return structure?.name || structureName.charAt(0).toUpperCase() + structureName.slice(1).replace('-', ' ');
   }
+
+  // NEW: Clear all structures for work switching
+  clearAllStructures() {
+    this.structures.clear();
+    this.clearHighlights();
+  }
 }
 
 // Global measure highlighter instance
 let measureHighlighter = null;
 
 function initializeMeasureHighlighter() {
-  measureHighlighter = new MeasureHighlighter();
+  if (!measureHighlighter) {
+    measureHighlighter = new MeasureHighlighter();
+  } else {
+    // Clear existing structures when switching works
+    measureHighlighter.clearAllStructures();
+  }
 
   if (CONFIG?.measureHighlighters) {
     Object.entries(CONFIG.measureHighlighters).forEach(([key, config]) => {
@@ -153,84 +164,80 @@ function initializeMeasureHighlighter() {
 
 function updateMeasureControlsVisibility() {
   const measureControls = document.getElementById('measure-controls');
+  
+  // Always hide measure controls since it's experimental
+  if (measureControls) {
+    measureControls.style.display = 'none';
+  }
+  
+  // Still initialize the measure highlighter functionality in the background
+  // in case it's needed for debugging or future use
   const select = document.getElementById('highlight-select');
-
-  if (!measureHighlighter || !measureControls || !select) return;
+  if (!measureHighlighter || !select) return;
 
   const structureNames = measureHighlighter.getStructureNames();
 
-  if (structureNames.length === 0) {
-    measureControls.style.display = 'none';
-    return;
-  }
+  if (structureNames.length > 0) {
+    // Clear existing options except "None"
+    while (select.children.length > 1) {
+      select.removeChild(select.lastChild);
+    }
 
-  // Clear existing options except "None"
-  while (select.children.length > 1) {
-    select.removeChild(select.lastChild);
-  }
-
-  // Add structure options
-  structureNames.forEach(name => {
-    const option = document.createElement('option');
-    option.value = name;
-    option.textContent = measureHighlighter.getStructureDisplayName(name);
-    select.appendChild(option);
-  });
-
-  if (structureNames.length === 1) {
-    select.disabled = true;
-    select.value = structureNames[0];
-    measureHighlighter.applyStructure(structureNames[0]);
-  } else {
-    select.disabled = false;
-  }
-
-  // Add event listener if not already added
-  if (!select.hasAttribute('data-listener-added')) {
-    select.addEventListener('change', (e) => {
-      if (e.target.value && measureHighlighter) {
-        measureHighlighter.applyStructure(e.target.value);
-      } else if (measureHighlighter) {
-        measureHighlighter.clearHighlights();
-      }
+    // Add structure options (hidden, but available for debugging)
+    structureNames.forEach(name => {
+      const option = document.createElement('option');
+      option.value = name;
+      option.textContent = measureHighlighter.getStructureDisplayName(name);
+      select.appendChild(option);
     });
-    select.setAttribute('data-listener-added', 'true');
+
+    // Add event listener if not already added (for potential debugging use)
+    if (!select.hasAttribute('data-listener-added')) {
+      select.addEventListener('change', (e) => {
+        if (e.target.value && measureHighlighter) {
+          measureHighlighter.applyStructure(e.target.value);
+        } else if (measureHighlighter) {
+          measureHighlighter.clearHighlights();
+        }
+      });
+      select.setAttribute('data-listener-added', 'true');
+    }
   }
 }
 
 // =============================================================================
-// CONFIGURATION SYSTEM
+// CONFIGURATION SYSTEM - UPDATED FOR DYNAMIC LOADING
 // =============================================================================
 
 let CONFIG = null;
 
-async function loadConfiguration() {
+async function loadConfiguration(workId = null) {
   try {
-    const workId = processWerkParameter();
+    // Use provided workId or get from URL
+    const targetWorkId = workId || processWerkParameter();
+    
     const element = document.getElementById('loading-werk');
     if (element) {
-        element.innerHTML = workId;
+      element.innerHTML = targetWorkId;
     }
-    const configResponse = await fetch(`${workId}/exports/${workId}.config.yaml`);
+    
+    const configResponse = await fetch(`${targetWorkId}/exports/${targetWorkId}.config.yaml`);
 
     if (!configResponse.ok) {
-      throw new Error(`Failed to load configuration for ${workId}`);
+      throw new Error(`Failed to load configuration for ${targetWorkId}`);
     }
 
     const yamlText = await configResponse.text();
     CONFIG = jsyaml.load(yamlText);
 
     // Update file paths for new unified format
-    const basePath = `${workId}/exports/`;
-    CONFIG.files.svgPath = `${basePath}${workId}.svg`;           // Cleaned SVG
-    CONFIG.files.syncPath = `${basePath}${workId}.yaml`;         // Unified timing data
+    const basePath = `${targetWorkId}/exports/`;
+    CONFIG.files.svgPath = `${basePath}${targetWorkId}.svg`;
+    CONFIG.files.syncPath = `${basePath}${targetWorkId}.yaml`;
     CONFIG.files.audioPath = `${basePath}${CONFIG.files.audioPath}`;
 
-    // console.log('📁 File paths configured:', {
-    //   svgPath: CONFIG.files.svgPath,
-    //   syncPath: CONFIG.files.syncPath,
-    //   audioPath: CONFIG.files.audioPath
-    // });
+    // Store the workId for reference
+    CONFIG.workId = targetWorkId;
 
     applyConfiguration();
     return CONFIG;
@@ -254,8 +261,6 @@ function applyConfiguration() {
   const audioSource = document.getElementById('audio-source');
   audioSource.src = CONFIG.files.audioPath;
   audio.load();
-
-  // Hide the old standalone Wikipedia button since we now have contextual one
 }
 
 function showConfigurationError(message) {
@@ -271,7 +276,7 @@ function showConfigurationError(message) {
 }
 
 // =============================================================================
-// GLOBAL STATE VARIABLES (Simplified)
+// GLOBAL STATE VARIABLES - UPDATED FOR DYNAMIC LOADING
 // =============================================================================
 
 const audio = document.getElementById("audio");
@@ -280,6 +285,145 @@ let HEADER_HEIGHT = 120;
 
 // Main synchronization system
 let sync = null;
+
+// Track initialization state
+let isInitialized = false;
+
+// =============================================================================
+// DYNAMIC WORK LOADING FUNCTIONS - NEW
+// =============================================================================
+
+async function loadWorkContent(workId, isInitialLoad = false) {
+  try {
+    console.log(`🔄 Loading work content for ${workId}...`);
+    
+    // Show loading state only if not initial load
+    const loadingElement = document.getElementById('loading');
+    const svgContainer = document.getElementById("svg-container");
+    
+    if (loadingElement && !isInitialLoad) {
+      loadingElement.classList.remove('d-none');
+    }
+
+    // 1. Load configuration
+    await loadConfiguration(workId);
+
+    // 2. Load SVG and sync data in parallel
+    const [svgText, syncData] = await Promise.all([
+      fetch(CONFIG.files.svgPath).then(r => {
+        if (!r.ok) throw new Error(`Failed to load SVG: ${CONFIG.files.svgPath}`);
+        return r.text();
+      }),
+      fetch(CONFIG.files.syncPath).then(r => {
+        if (!r.ok) throw new Error(`Failed to load sync data: ${CONFIG.files.syncPath}`);
+        return r.text();
+      }).then(yamlText => {
+        const parsed = jsyaml.load(yamlText);
+        
+        if (!parsed.meta) {
+          throw new Error('Sync data missing "meta" section');
+        }
+        if (!parsed.flow) {
+          throw new Error('Sync data missing "flow" section');
+        }
+
+        return parsed;
+      })
+    ]);
+
+    // 3. Update SVG content
+    svgContainer.innerHTML = svgText;
+    svgGlobal = svgContainer.querySelector("svg");
+
+    if (!svgGlobal) {
+      throw new Error("SVG element not found in loaded content");
+    }
+
+    // 4. Stop current audio and sync (only if not initial load)
+    if (!isInitialLoad) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+    
+    // Clean up previous sync if it exists
+    if (sync) {
+      sync.stop();
+      sync = null;
+    }
+
+    // 5. Initialize new synchronization system
+    sync = new Synchronisator(syncData, audio, svgGlobal, CONFIG);
+    window.sync = sync; // Make globally accessible
+
+    // Set up custom bar display callback
+    sync.onBarChange = (barNumber) => {
+      currentBarGlobal.innerText = barNumber;
+      scrollToBar(barNumber);
+    };
+
+    // 6. Apply channel colors and other work-specific features
+    applyChannelColors(syncData);
+    
+    // 7. Re-initialize measure highlighter with new config
+    initializeMeasureHighlighter();
+
+    // 8. Update navigation state if navigation is initialized
+    if (typeof window.getBWVNavigation === 'function') {
+      const nav = window.getBWVNavigation();
+      if (nav) {
+        nav.updateCurrentWork(workId);
+        nav.updateActiveState();
+      }
+    }
+
+    // 9. Update UI state (only reset highlights if not initial load)
+    if (isInitialLoad) {
+      // Just set the current bar, don't try to clear highlights yet
+      if (currentBarGlobal) {
+        currentBarGlobal.innerText = '1';
+      }
+      setPlayingState(false);
+    } else {
+      updatePlaybackState();
+    }
+    
+    checkScrollButtonVisibility();
+    positionButtons();
+
+    // Hide loading (only if we showed it)
+    if (loadingElement && !isInitialLoad) {
+      loadingElement.classList.add('d-none');
+    }
+
+    console.log(`✅ Successfully loaded ${workId}: ${sync.getStats().totalNotes} notes, ${sync.barElementsCache.size} bars`);
+    
+    return true;
+
+  } catch (error) {
+    console.error(`❌ Failed to load work content for ${workId}:`, error);
+    showConfigurationError(error.message);
+    throw error;
+  }
+}
+
+// Reset current bar display
+function updatePlaybackState() {
+  if (currentBarGlobal) {
+    currentBarGlobal.innerText = '1';
+  }
+  
+  // Reset playing state
+  setPlayingState(false);
+  
+  // Reset any active highlights using the correct method name
+  if (window.highlighter && typeof window.highlighter.removeAllHighlights === 'function') {
+    try {
+      window.highlighter.removeAllHighlights();
+    } catch (error) {
+      console.warn('Could not clear highlights:', error);
+    }
+  }
+}
 
 // =============================================================================
 // UI VISIBILITY MANAGEMENT
@@ -338,7 +482,7 @@ function scrollToBar(barNumber) {
 }
 
 // =============================================================================
-// PLAYBACK STATE MANAGEMENT (Simplified)
+// PLAYBACK STATE MANAGEMENT
 // =============================================================================
 
 function setPlayingState(isPlayingState) {
@@ -352,7 +496,7 @@ function setPlayingState(isPlayingState) {
 }
 
 // =============================================================================
-// CHANNEL TO COLOR MAPPING (Updated for data-ref)
+// CHANNEL TO COLOR MAPPING
 // =============================================================================
 
 function applyChannelColors(syncData) {
@@ -362,8 +506,6 @@ function applyChannelColors(syncData) {
   const notesWithChannels = syncData.flow
     .filter(item => item.length === 3) // Notes only
     .map(([, , hrefs]) => {
-      // Find corresponding note data with channel info
-      // This would need to be passed from the sync data or reconstructed
       return { hrefs: Array.isArray(hrefs) ? hrefs : [hrefs] };
     });
 
@@ -372,7 +514,6 @@ function applyChannelColors(syncData) {
     note.hrefs.forEach(href => {
       const elements = svgGlobal.querySelectorAll(`[data-ref="${href}"]`);
       elements.forEach(element => {
-        // Apply channel-based color class
         element.classList.add(`channel-${note.channel || 0}`);
       });
     });
@@ -386,7 +527,6 @@ function applyChannelColors(syncData) {
 function positionButtons() {
   if (!svgGlobal) return;
 
-  // Only position the scroll-to-top button now (Wikipedia button is contextual in header)
   const buttons = document.querySelectorAll('#button_scroll_to_top');
   const svgRect = svgGlobal.getBoundingClientRect();
 
@@ -435,7 +575,7 @@ function applyMobileTimingAdjustment(config) {
   const originalLeadTime = config.musicalStructure.visualLeadTimeSeconds ?? 0.0;
 
   if (isMobile) {
-    const mobileAdjustment = 0.2; // 200ms additional lead time for mobile
+    const mobileAdjustment = 0.2;
     config.musicalStructure.visualLeadTimeSeconds = originalLeadTime + mobileAdjustment;
   } else {
     config.musicalStructure.visualLeadTimeSeconds = originalLeadTime;
@@ -445,102 +585,59 @@ function applyMobileTimingAdjustment(config) {
 }
 
 // =============================================================================
-// APPLICATION INITIALIZATION (Simplified)
+// APPLICATION INITIALIZATION - UPDATED FOR DYNAMIC LOADING
 // =============================================================================
 
 async function setup() {
   try {
-
-    window.highlighter = new MusicalHighlighter();
-    
-    // Load configuration
-    await loadConfiguration();
-
-    // Load unified sync data and SVG in parallel
-    const [svgText, syncData] = await Promise.all([
-      fetch(CONFIG.files.svgPath).then(r => {
-        if (!r.ok) throw new Error(`Failed to load SVG: ${CONFIG.files.svgPath}`);
-        return r.text();
-      }),
-      fetch(CONFIG.files.syncPath).then(r => {
-        if (!r.ok) throw new Error(`Failed to load sync data: ${CONFIG.files.syncPath}`);
-        return r.text();
-      }).then(yamlText => {
-        // console.log('📄 Raw YAML loaded, parsing...');
-        const parsed = jsyaml.load(yamlText);
-        // console.log('✅ YAML parsed successfully:', {
-        //   hasMeta: !!parsed.meta,
-        //   hasFlow: !!parsed.flow,
-        //   metaKeys: parsed.meta ? Object.keys(parsed.meta) : 'none',
-        //   flowLength: parsed.flow ? parsed.flow.length : 0
-        // });
-
-        // Validate structure
-        if (!parsed.meta) {
-          throw new Error('Sync data missing "meta" section');
-        }
-        if (!parsed.flow) {
-          throw new Error('Sync data missing "flow" section');
-        }
-
-        return parsed;
-      })
-    ]);
-
-    // Initialize DOM references
-    const svgContainer = document.getElementById("svg-container");
-    svgContainer.innerHTML = svgText;
+    // Initialize global references that don't change
     bodyGlobal = document.querySelector('body');
-    svgGlobal = svgContainer.querySelector("svg");
     headerElementGlobal = document.getElementById('header');
     footerElementGlobal = document.getElementById('footer');
-    footerElementGlobal.style.visibility = "visible";
     currentBarGlobal = document.getElementById('current_bar');
+    
+    // Make footer visible
+    if (footerElementGlobal) {
+      footerElementGlobal.style.visibility = "visible";
+    }
 
     HEADER_HEIGHT = 120;
 
-    if (!svgGlobal) {
-      throw new Error("SVG element not found in loaded content");
+    // Initialize global highlighter
+    window.highlighter = new MusicalHighlighter();
+    
+    // Initialize BWV navigation menu system FIRST
+    console.log('🚀 Starting BWV navigation initialization...');
+    await initializeBWVNavigation();
+    console.log('✅ BWV navigation initialization complete');
+
+    // Load initial work content
+    const initialWorkId = processWerkParameter();
+    await loadWorkContent(initialWorkId, true); // true = isInitialLoad
+
+    // Ensure navigation state is synchronized
+    if (typeof window.getBWVNavigation === 'function') {
+      const nav = window.getBWVNavigation();
+      if (nav) {
+        nav.updateCurrentWork(initialWorkId);
+        nav.updateActiveState();
+      }
     }
 
-    // Initialize the unified synchronization system
-    sync = new Synchronisator(syncData, audio, svgGlobal, CONFIG);
-
-    // Make synchronisator globally accessible for debugging
-    window.sync = sync;
-
-    // Set up custom bar display callback
-    sync.onBarChange = (barNumber) => {
-      currentBarGlobal.innerText = barNumber;
-      scrollToBar(barNumber);
-    };
-
-    // Apply channel colors (if channel data is available)
-    applyChannelColors(syncData);
-
+    // Initialize event handlers (only once)
     initEventHandlers();
-    initializeMeasureHighlighter();
 
-    // Initialize BWV navigation menu system
-    // console.log('🚀 Starting BWV navigation initialization...');
-    await initializeBWVNavigation();
-    // console.log('✅ BWV navigation initialization complete');
-
-    // console.log(`🎼 ${CONFIG.workInfo.title} loaded: ${sync.getStats().totalNotes} notes, ${sync.barElementsCache.size} bars`);
-    // console.log('🔍 Debug: Type sync.debug() in console for detailed info');
-    // console.log('🧪 Debug: Type sync.testHighlight("test-main.ly:14:23") to test highlighting');
-    // console.log('🎨 Debug: Check if .active CSS class exists and is visible');
-    // console.log('🎵 BWV Player fully loaded and ready!');
+    console.log('🎵 BWV Player fully loaded and ready!');
 
     // Show the interface
     checkScrollButtonVisibility();
 
-    // Adjust BWV button layout after navigation is fully initialized
-    // console.log('⏱️  Scheduling BWV button layout adjustment...');
+    // Adjust BWV button layout after everything is loaded
     setTimeout(() => {
-      // console.log('⏱️  Timeout fired, calling adjustBWVButtonLayout');
       adjustBWVButtonLayout();
     }, 100);
+
+    isInitialized = true;
 
   } catch (err) {
     console.error("Setup error:", err);
@@ -552,16 +649,22 @@ async function setup() {
 }
 
 // =============================================================================
-// EVENT HANDLERS (Simplified)
+// EVENT HANDLERS - UPDATED FOR DYNAMIC LOADING
 // =============================================================================
 
 function initEventHandlers() {
+  // Only initialize once
+  if (initEventHandlers.initialized) return;
+  initEventHandlers.initialized = true;
+
   positionButtons();
-  // Only manage scroll-to-top and bar spy visibility (Wikipedia button is contextual now)
+  
+  // Show UI elements
   document.querySelectorAll('#button_scroll_to_top, #bar_spy').forEach(button => {
     button.style.visibility = 'visible';
   });
 
+  // Window event handlers
   window.addEventListener('resize', () => {
     debouncedPositionButtons();
     debouncedAdjustBWV();
@@ -569,7 +672,7 @@ function initEventHandlers() {
 
   window.addEventListener('scroll', debouncedCheckScroll);
 
-  // Audio event handlers - simplified with synchronisator
+  // Audio event handlers - these work with any sync instance
   audio.addEventListener("play", () => {
     setPlayingState(true);
     sync?.start();
@@ -586,7 +689,7 @@ function initEventHandlers() {
     audio.currentTime = 0;
   });
 
-  // Seeking - much simpler with synchronisator
+  // Seeking handlers
   let seekingTimeout;
   audio.addEventListener('seeking', () => {
     bodyGlobal?.classList.add('seeking');
@@ -602,6 +705,26 @@ function initEventHandlers() {
     sync?.seek(audio.currentTime);
   });
 }
+
+// =============================================================================
+// GLOBAL API FOR DYNAMIC NAVIGATION - NEW
+// =============================================================================
+
+// Export loadWorkContent for use by navigation menu
+// Default to false for isInitialLoad when called from navigation
+window.loadWorkContent = (workId, isInitialLoad = false) => loadWorkContent(workId, isInitialLoad);
+
+// Export other useful functions
+window.getAppState = () => ({
+  isInitialized,
+  currentWork: CONFIG?.workId || null,
+  sync,
+  CONFIG
+});
+
+// Global references for debugging and integration
+window.sync = null; // Will be set by loadWorkContent
+window.CONFIG = null; // Will be set by loadConfiguration
 
 // =============================================================================
 // APPLICATION STARTUP
