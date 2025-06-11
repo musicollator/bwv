@@ -598,7 +598,7 @@ async function setup() {
     
     // Make footer visible
     if (footerElementGlobal) {
-      footerElementGlobal.style.visibility = "visible";
+      // footerElementGlobal.style.visibility = "visible";
     }
 
     HEADER_HEIGHT = 120;

@@ -8,6 +8,7 @@
 
 :root {
   --header-height: 104px;
+  --footer-height: 32px;
 
   /* 🎼 Bach Color Palette - Easy to modify! */
   --bach-cream: #faf8f3; /* Primary background */
@@ -234,8 +235,12 @@ body.seeking #bar_spy :first-child {
 
 /* Footer */
 footer#footer {
-  visibility: visible;
   z-index: 10;
+  /*
+  height: var(--footer-height) !important;
+  min-height: var(--footer-height) !important;
+  max-height: var(--footer-height) !important;
+  */
   background-color: var(--bach-cream) !important;
   border-top-color: var(--bach-taupe-50) !important;
   color: var(--bach-dark);
