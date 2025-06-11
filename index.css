@@ -246,6 +246,12 @@ footer#footer {
   color: var(--bach-dark);
 }
 
+#footer.d-flex.justify-content-between > div:nth-child(2) {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 /* Measure highlighting controls */
 #measure-controls {
   margin: 10px 0;
