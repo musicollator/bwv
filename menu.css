@@ -1,0 +1,49 @@
+/* BWV Navigation - No Flexbox Version */
+#bwv-navigation {
+  background: rgba(250, 248, 243, 0.9);
+}
+
+#bwv-buttons-container {
+  display: block;
+  text-align: center;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  min-height: 31px;
+  
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  
+  /* Hide scrollbar on most browsers but keep functionality */
+  scrollbar-width: thin;
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+#bwv-buttons-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+#bwv-buttons-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+#bwv-buttons-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+#bwv-buttons-container .btn {
+  display: inline-block;
+  margin: 0 4px;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+/* When content overflows, align left for scrolling */
+#bwv-buttons-container.scrolling {
+  text-align: left;
+  padding-left: 20px;
+  padding-right: 20px;
+}

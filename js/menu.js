@@ -328,7 +328,7 @@ class BWVNavigationMenu {
       }
     }
   }
-  
+
   attachEventListeners() {
     // Click events for navigation buttons
     document.addEventListener('click', (e) => {
@@ -341,24 +341,28 @@ class BWVNavigationMenu {
       }
     });
 
-    document.addEventListener('touchstart', (e) => {
-      this.touchStartX = e.changedTouches[0].screenX;
-      this.createSwipeArrows();
-    }, { passive: true });
+    // Target swipe gestures only to the SVG container
+    const swipeTarget = document.getElementById('svg-container');
+    if (swipeTarget) {
+      swipeTarget.addEventListener('touchstart', (e) => {
+        this.touchStartX = e.changedTouches[0].screenX;
+        this.createSwipeArrows();
+      }, { passive: true });
 
-    document.addEventListener('touchmove', (e) => {
-      if (this.isSwipeActive) {
-        const currentX = e.changedTouches[0].screenX;
-        this.updateSwipeArrows(currentX);
-      }
-    }, { passive: true });
+      swipeTarget.addEventListener('touchmove', (e) => {
+        if (this.isSwipeActive) {
+          const currentX = e.changedTouches[0].screenX;
+          this.updateSwipeArrows(currentX);
+        }
+      }, { passive: true });
 
-    document.addEventListener('touchend', (e) => {
-      this.touchEndX = e.changedTouches[0].screenX;
-      this.hideSwipeArrows();
-      this.handleSwipeGesture();
-    }, { passive: true });
-
+      swipeTarget.addEventListener('touchend', (e) => {
+        this.touchEndX = e.changedTouches[0].screenX;
+        this.hideSwipeArrows();
+        this.handleSwipeGesture();
+      }, { passive: true });
+    }
+    
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey) {
@@ -584,74 +588,54 @@ function adjustBWVButtonLayout() {
     return;
   }
 
-  // Check if we need layout adjustments
-  let needsLayoutAdjustment = false;
-  const buffer = 20;
-  if (container.scrollWidth > (window.innerWidth - buffer)) {
-    needsLayoutAdjustment = true;
-  }
+  // Reset to center-aligned, full text
+  container.classList.remove('scrolling');
+  container.style.textAlign = 'center';
 
-  // Only hide container if we're going to make layout changes
-  if (needsLayoutAdjustment) {
-    container.style.visibility = 'hidden';
-  }
-
-  // Reset to original text first
   buttons.forEach(btn => {
     const workId = btn.dataset.workId;
     if (workId) {
       const number = workId.replace('bwv', '');
 
-      if (btn.querySelector('.wiki-element')) {
+      // Only update text if it doesn't have Wikipedia icon
+      if (!btn.querySelector('.wiki-element')) {
+        btn.textContent = `BWV ${number}`;
+      } else {
+        // Update just the text span for active button
         const textSpan = btn.querySelector('span:first-child');
         if (textSpan) {
           textSpan.textContent = `BWV ${number}`;
         }
-      } else {
-        btn.textContent = `BWV ${number}`;
       }
     }
   });
 
-  // Reset container styles
-  container.style.justifyContent = 'center';
-  container.style.overflowX = 'visible';
-  container.style.minHeight = '32px';
-
-  if (needsLayoutAdjustment) {
-    container.offsetWidth;
-  }
-
-  // Apply responsive adjustments if needed
+  // Check if we need horizontal scrolling
+  const buffer = 20;
   if (container.scrollWidth > (window.innerWidth - buffer)) {
-    // Remove "BWV " prefix
-    buttons.forEach(btn => {
-      const workId = btn.dataset.workId;
-      if (workId) {
-        const number = workId.replace('bwv', '');
+    // Switch to scroll mode
+    container.classList.add('scrolling');
+    container.style.textAlign = 'left';
 
-        if (btn.querySelector('.wiki-element')) {
-          const textSpan = btn.querySelector('span:first-child');
-          if (textSpan) {
-            textSpan.textContent = number.toUpperCase();
+    // Shrink text if still too wide
+    if (container.scrollWidth > (window.innerWidth - buffer + 40)) {
+      buttons.forEach(btn => {
+        const workId = btn.dataset.workId;
+        if (workId) {
+          const number = workId.replace('bwv', '');
+
+          if (!btn.querySelector('.wiki-element')) {
+            btn.textContent = number.toUpperCase();
+          } else {
+            const textSpan = btn.querySelector('span:first-child');
+            if (textSpan) {
+              textSpan.textContent = number.toUpperCase();
+            }
           }
-        } else {
-          btn.textContent = number.toUpperCase();
         }
-      }
-    });
-
-    container.offsetWidth;
-
-    if (container.scrollWidth > (window.innerWidth - buffer)) {
-      // Enable horizontal scroll
-      container.style.justifyContent = 'flex-start';
-      container.style.overflowX = 'auto';
+      });
     }
   }
-
-  // Always ensure container is visible
-  container.style.visibility = 'visible';
 }
 
 // =============================================================================
