@@ -78,7 +78,7 @@ class BWVNavigationMenu {
     // Create buttons for each available work
     this.availableWorks.forEach(workId => {
       const button = document.createElement('button');
-      button.className = 'btn btn-sm btn-outline-dark';
+      button.className = 'btn btn-sm btn-outline-light rounded-0';
       button.type = 'button';
       button.setAttribute('data-work-id', workId);
 
@@ -121,19 +121,9 @@ class BWVNavigationMenu {
   updateActiveState() {
     // Remove active styling and re-enable all buttons, restore original content
     document.querySelectorAll('[data-work-id]').forEach(btn => {
-      btn.classList.remove('btn-warning', 'btn-secondary');
-      btn.classList.add('btn-outline-dark');
+      btn.classList.remove('btn-warning', 'btn-secondary', 'btn-active');
+      btn.classList.add('btn-outline-light');
       btn.disabled = false;
-      btn.style.cursor = '';
-      btn.style.display = '';
-      btn.style.alignItems = '';
-      btn.style.justifyContent = '';
-      btn.style.backgroundColor = '';
-      btn.style.borderColor = '';
-      btn.style.border = '';
-      btn.style.color = '';
-      btn.style.minHeight = '';
-      btn.style.pointerEvents = '';
 
       // Restore original BWV text
       const workId = btn.dataset.workId;
@@ -147,44 +137,26 @@ class BWVNavigationMenu {
     const activeBtn = document.querySelector(`[data-work-id="${this.currentWorkId}"]`);
     if (activeBtn) {
       // Style as current with Bach gold background and border
-      activeBtn.classList.remove('btn-outline-dark');
-      activeBtn.style.backgroundColor = 'var(--bach-gold, #daa520)';
-      activeBtn.style.borderColor = 'var(--bach-gold, black)';
-      activeBtn.style.border = '1px solid var(--bach-brown, black)';
-      activeBtn.style.color = 'var(--bach-mid, black)';
-      activeBtn.style.cursor = 'default';
-      activeBtn.style.minHeight = '32px';
-      activeBtn.style.padding = '0 0.5rem';
+      /*
+      */
+      activeBtn.classList.remove('btn-outline-light');
+      activeBtn.classList.add('btn-active');
 
       // Get the BWV number for display
       const number = this.currentWorkId.replace('bwv', '');
 
       // Create enhanced content with integrated Wikipedia element
       activeBtn.innerHTML = `
-        <span style="margin-right: 8px;">BWV ${number}</span>
+        <span>BWV ${number}</span>
         <span class="wiki-element" 
-              style="display: inline-flex; align-items: center; justify-content: center; 
-                     width: 28px; height: 28px; 
-                     background: transparent; 
-                     border: none;
-                     cursor: pointer; margin-left: auto;
-                     pointer-events: all; position: relative;"
               title="Open Wikipedia in new tab">
           <img src="media/Wikipedia-logo-v2.svg" width="24" height="24" alt="Wikipedia">
         </span>
       `;
 
-      activeBtn.style.display = 'flex';
-      activeBtn.style.alignItems = 'center';
-      activeBtn.style.justifyContent = 'space-between';
-      activeBtn.style.pointerEvents = 'none';
-      activeBtn.style.boxSizing = 'border-box';
-
       // Add click handler specifically to the Wikipedia element
       const wikiElement = activeBtn.querySelector('.wiki-element');
       if (wikiElement) {
-        wikiElement.style.pointerEvents = 'all';
-
         wikiElement.addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -198,13 +170,11 @@ class BWVNavigationMenu {
 
         // Add hover effect
         wikiElement.addEventListener('mouseenter', () => {
-          wikiElement.style.backgroundColor = 'rgba(0,0,0,0.1)';
-          wikiElement.style.borderRadius = '4px';
+          wikiElement.classList.add('wiki-element-hover');
         });
 
         wikiElement.addEventListener('mouseleave', () => {
-          wikiElement.style.backgroundColor = 'transparent';
-          wikiElement.style.borderRadius = '';
+          wikiElement.classList.remove('wiki-element-hover');
         });
       }
     }
@@ -217,19 +187,7 @@ class BWVNavigationMenu {
     if (!this.swipeArrows.left) {
       this.swipeArrows.left = document.createElement('div');
       this.swipeArrows.left.innerHTML = '‹';
-      this.swipeArrows.left.style.cssText = `
-      position: fixed;
-      left: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 48px;
-      color: var(--bach-gold, #daa520);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      pointer-events: none;
-      z-index: 1000;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    `;
+      this.swipeArrows.left.className = 'swipe-arrow swipe-arrow-left';
       document.body.appendChild(this.swipeArrows.left);
     }
 
@@ -237,19 +195,7 @@ class BWVNavigationMenu {
     if (!this.swipeArrows.right) {
       this.swipeArrows.right = document.createElement('div');
       this.swipeArrows.right.innerHTML = '›';
-      this.swipeArrows.right.style.cssText = `
-      position: fixed;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 48px;
-      color: var(--bach-gold, #daa520);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      pointer-events: none;
-      z-index: 1000;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    `;
+      this.swipeArrows.right.className = 'swipe-arrow swipe-arrow-right';
       document.body.appendChild(this.swipeArrows.right);
     }
   }
@@ -260,29 +206,27 @@ class BWVNavigationMenu {
 
     if (Math.abs(swipeDistance) < threshold) {
       // Hide both arrows if movement is too small
-      this.swipeArrows.left.style.opacity = '0';
-      this.swipeArrows.right.style.opacity = '0';
+      this.swipeArrows.left.classList.remove('swipe-arrow-visible');
+      this.swipeArrows.right.classList.remove('swipe-arrow-visible');
       return;
     }
 
     if (swipeDistance > 0) {
       // Swiping right (previous) - only show if we can go previous
       if (this.canNavigatePrevious()) {
-        const opacity = Math.min(Math.abs(swipeDistance) / this.minSwipeDistance, 1);
-        this.swipeArrows.left.style.opacity = opacity;
+        this.swipeArrows.left.classList.add('swipe-arrow-visible');
       } else {
-        this.swipeArrows.left.style.opacity = '0';
+        this.swipeArrows.left.classList.remove('swipe-arrow-visible');
       }
-      this.swipeArrows.right.style.opacity = '0';
+      this.swipeArrows.right.classList.remove('swipe-arrow-visible');
     } else {
       // Swiping left (next) - only show if we can go next
       if (this.canNavigateNext()) {
-        const opacity = Math.min(Math.abs(swipeDistance) / this.minSwipeDistance, 1);
-        this.swipeArrows.right.style.opacity = opacity;
+        this.swipeArrows.right.classList.add('swipe-arrow-visible');
       } else {
-        this.swipeArrows.right.style.opacity = '0';
+        this.swipeArrows.right.classList.remove('swipe-arrow-visible');
       }
-      this.swipeArrows.left.style.opacity = '0';
+      this.swipeArrows.left.classList.remove('swipe-arrow-visible');
     }
   }
 
@@ -290,10 +234,10 @@ class BWVNavigationMenu {
     this.isSwipeActive = false;
 
     if (this.swipeArrows.left) {
-      this.swipeArrows.left.style.opacity = '0';
+      this.swipeArrows.left.classList.remove('swipe-arrow-visible');
     }
     if (this.swipeArrows.right) {
-      this.swipeArrows.right.style.opacity = '0';
+      this.swipeArrows.right.classList.remove('swipe-arrow-visible');
     }
   }
 
@@ -590,6 +534,7 @@ function adjustBWVButtonLayout() {
 
   // Reset to center-aligned, full text
   container.classList.remove('scrolling');
+  container.parentElement?.classList.remove('scrolling');
   container.style.textAlign = 'center';
 
   buttons.forEach(btn => {
@@ -610,11 +555,12 @@ function adjustBWVButtonLayout() {
     }
   });
 
-  // Check if we need horizontal scrolling
+  // Check if we need horizontal scroll
   const buffer = 20;
   if (container.scrollWidth > (window.innerWidth - buffer)) {
     // Switch to scroll mode
     container.classList.add('scrolling');
+    container.parentElement?.classList.add('scrolling');
     container.style.textAlign = 'left';
 
     // Shrink text if still too wide

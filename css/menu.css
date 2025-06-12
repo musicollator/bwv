@@ -1,49 +1,171 @@
-/* BWV Navigation - No Flexbox Version */
-#bwv-navigation {
-  background: rgba(250, 248, 243, 0.9);
+/* =============================================================================
+   BWV NAVIGATION MENU STYLES
+   Extracted from original menu.js inline styles
+   ============================================================================= */
+
+/* =============================================================================
+   ACTIVE BUTTON STYLES
+   ============================================================================= */
+
+.btn[data-work-id] {
+  color: var(--bach-dark, black) !important;
+  padding: 0 0.5rem !important;
+  min-height: 32px !important;
+  box-sizing: border-box;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  white-space: nowrap;
 }
 
+/* Reset styles for non-active buttons */
+.btn[data-work-id]:not(.btn-active) {
+  border-bottom: 2.5px solid transparent !important;
+  border-radius: 0 !important;
+  cursor: pointer;
+  pointer-events: all;
+}
+
+/* Active BWV button styling */
+.btn[data-work-id].btn-active {
+  border-bottom: 2.5px solid var(--bach-brown, dimgrey) !important;
+  color: var(--bach-brown, dimgrey) !important;
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+/* Wikipedia element within active button */
+.wiki-element {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  margin-left: 0.5rem !important;
+  pointer-events: all !important;
+  position: relative !important;
+}
+
+/* Wikipedia element hover effect */
+.wiki-element-hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px !important;
+}
+
+/* =============================================================================
+   SWIPE ARROW STYLES
+   ============================================================================= */
+
+/* Base swipe arrow styling */
+.swipe-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 48px;
+  color: var(--bach-gold, #daa520);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 1000;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Left swipe arrow positioning */
+.swipe-arrow-left {
+  left: 20px;
+}
+
+/* Right swipe arrow positioning */
+.swipe-arrow-right {
+  right: 20px;
+}
+
+/* Visible state for swipe arrows */
+.swipe-arrow-visible {
+  opacity: 1;
+}
+
+/* =============================================================================
+   CONTAINER LAYOUT STYLES
+   ============================================================================= */
+
+/* Default container alignment */
 #bwv-buttons-container {
-  display: block;
   text-align: center;
   white-space: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px 0;
-  min-height: 31px;
-  
-  /* Smooth scrolling */
-  scroll-behavior: smooth;
-  
-  /* Hide scrollbar on most browsers but keep functionality */
-  scrollbar-width: thin;
-  -ms-overflow-style: -ms-autohiding-scrollbar;
 }
 
-#bwv-buttons-container::-webkit-scrollbar {
-  height: 6px;
-}
-
-#bwv-buttons-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-#bwv-buttons-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-#bwv-buttons-container .btn {
-  display: inline-block;
-  margin: 0 4px;
-  white-space: nowrap;
-  vertical-align: top;
-}
-
-/* When content overflows, align left for scrolling */
+/* Scrolling mode container */
 #bwv-buttons-container.scrolling {
   text-align: left;
-  padding-left: 120px;
-  /* padding-right: 20px; */
+  padding-left: 12%;
+  scrollbar-width: none;
+}
+
+/* =============================================================================
+   RESPONSIVE CONSIDERATIONS
+   ============================================================================= */
+
+/* Container scroll behavior */
+#bwv-buttons-container.scrolling {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#bwv-navigation.scrolling,
+#bwv-navigation.scrolling::before,
+#bwv-navigation.scrolling::after {
+  position: relative;
+}
+#bwv-navigation.scrolling::before,
+#bwv-navigation.scrolling::after {
+  position: absolute;
+  display: inline;
+  white-space: nowrap;
+  top: 50%;
+  transform: translateY(-50%);
+  vertical-align: middle;
+  color: var(--bach-brown, dimgrey) !important;
+}
+
+#bwv-navigation.scrolling::before {
+  content: "<";
+  left:0;
+  margin-left: -.5rem;
+}
+
+#bwv-navigation.scrolling::after {
+  content: ">";
+  right: 0;
+  margin-right: -.5rem;
+}
+
+/* =============================================================================
+   ACCESSIBILITY AND INTERACTION
+   ============================================================================= */
+
+/* Ensure wiki element is properly clickable */
+.wiki-element img {
+  pointer-events: none;
+  display: block;
+}
+
+/* =============================================================================
+   MOBILE OPTIMIZATIONS
+   ============================================================================= */
+
+/* Maintain original swipe arrow sizing */
+.swipe-arrow {
+  font-size: 48px;
+}
+
+.swipe-arrow-left {
+  left: 20px;
+}
+
+.swipe-arrow-right {
+  right: 20px;
 }
