@@ -1,6 +1,6 @@
-# Adding BWV846 as a Submodule with Sparse Checkout
+# Adding BWV988 as a Submodule with Sparse Checkout
 
-This guide provides step-by-step instructions for adding the bwv846 repository as a submodule with sparse checkout to avoid downloading unnecessary files.
+This guide provides step-by-step instructions for adding the bwv988 repository as a submodule with sparse checkout to avoid downloading unnecessary files.
 
 ## Initial Setup (One-time)
 
@@ -9,14 +9,14 @@ This guide provides step-by-step instructions for adding the bwv846 repository a
 # From the bwv project root
 cd bwv
 
-# Add bwv846 as a submodule
-git submodule add https://github.com/musicollator/bwv846.git bwv846
+# Add bwv988 as a submodule
+git submodule add https://github.com/musicollator/bwv988.git bwv988
 ```
 
 ### Step 2: Configure sparse checkout
 ```bash
 # Enter the submodule directory
-cd bwv846
+cd bwv988
 
 # Enable sparse checkout
 git config core.sparseCheckout true
@@ -26,13 +26,13 @@ git config core.sparseCheckout true
 ```bash
 # Go back to parent directory and configure the sparse-checkout
 cd ..
-echo "exports" > .git/modules/bwv846/info/sparse-checkout
+echo "exports" > .git/modules/bwv988/info/sparse-checkout
 ```
 
 ### Step 4: Apply the sparse checkout
 ```bash
 # Go back into the submodule and apply the configuration
-cd bwv846
+cd bwv988
 git read-tree -m -u HEAD
 ```
 
@@ -42,8 +42,8 @@ git read-tree -m -u HEAD
 cd ..
 
 # Add and commit the submodule
-git add .gitmodules bwv846
-git commit -m "Add bwv846 as submodule with sparse checkout"
+git add .gitmodules bwv988
+git commit -m "Add bwv988 as submodule with sparse checkout"
 ```
 
 ## For New Clones
@@ -55,23 +55,23 @@ When someone clones the bwv project for the first time:
 git clone --recursive https://github.com/your-username/bwv.git
 cd bwv
 
-# Configure sparse checkout for bwv846
-echo "exports" > .git/modules/bwv846/info/sparse-checkout
-cd bwv846
+# Configure sparse checkout for bwv988
+echo "exports" > .git/modules/bwv988/info/sparse-checkout
+cd bwv988
 git config core.sparseCheckout true
 git read-tree -m -u HEAD
 ```
 
 ## Updating the Submodule
 
-To update bwv846 to the latest version:
+To update bwv988 to the latest version:
 
 ```bash
-cd bwv/bwv846
+cd bwv/bwv988
 git pull origin main
 cd ..
-git add bwv846
-git commit -m "Update bwv846 submodule"
+git add bwv988
+git commit -m "Update bwv988 submodule"
 ```
 
 ## Troubleshooting
@@ -79,12 +79,12 @@ git commit -m "Update bwv846 submodule"
 If sparse checkout isn't working properly, try this sequence:
 
 ```bash
-cd bwv/bwv846
+cd bwv/bwv988
 git config core.sparseCheckout true
-rm ../.git/modules/bwv846/info/sparse-checkout
+rm ../.git/modules/bwv988/info/sparse-checkout
 
 # Recreate sparse-checkout file with exports directory only
-echo "exports" > ../.git/modules/bwv846/info/sparse-checkout
+echo "exports" > ../.git/modules/bwv988/info/sparse-checkout
 
 # Force apply the configuration
 git read-tree -m -u HEAD
