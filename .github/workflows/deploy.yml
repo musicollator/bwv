@@ -133,6 +133,7 @@ jobs:
         cp index.css deploy/
         cp index.js deploy/
         cp synchronisator.mjs deploy/
+        cp -r css deploy/
         cp -r js deploy/
         cp bwvs.json deploy/
         cp -r media deploy/
