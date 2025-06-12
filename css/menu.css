@@ -92,13 +92,13 @@
    CONTAINER LAYOUT STYLES
    ============================================================================= */
 
-/* Default container alignment */
+/* Default container alignment - center aligned */
 #bwv-buttons-container {
   text-align: center;
   white-space: nowrap;
 }
 
-/* Scrolling mode container */
+/* Scrolling mode container - left aligned with scroll indicators */
 #bwv-buttons-container.scrolling {
   text-align: left;
   padding-left: 12%;
@@ -120,6 +120,7 @@
 #bwv-navigation.scrolling::after {
   position: relative;
 }
+
 #bwv-navigation.scrolling::before,
 #bwv-navigation.scrolling::after {
   position: absolute;
@@ -129,18 +130,20 @@
   transform: translateY(-50%);
   vertical-align: middle;
   color: var(--bach-brown, dimgrey) !important;
+  z-index: 10;
+  pointer-events: none;
 }
 
 #bwv-navigation.scrolling::before {
   content: "<";
-  left:0;
-  margin-left: -.5rem;
+  left: 0;
+  margin-left: -0.5rem;
 }
 
 #bwv-navigation.scrolling::after {
   content: ">";
   right: 0;
-  margin-right: -.5rem;
+  margin-right: -0.5rem;
 }
 
 /* =============================================================================
