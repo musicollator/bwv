@@ -137,8 +137,6 @@ class BWVNavigationMenu {
     const activeBtn = document.querySelector(`[data-work-id="${this.currentWorkId}"]`);
     if (activeBtn) {
       // Style as current with Bach gold background and border
-      /*
-      */
       activeBtn.classList.remove('btn-outline-light');
       activeBtn.classList.add('btn-active');
 
@@ -177,6 +175,22 @@ class BWVNavigationMenu {
           wikiElement.classList.remove('wiki-element-hover');
         });
       }
+    }
+    this.scrollActiveIntoView();
+  }
+
+  scrollActiveIntoView() {
+    const activeBtn = document.querySelector(`[data-work-id="${this.currentWorkId}"]`);
+    const container = document.getElementById('bwv-buttons-container');
+
+    if (activeBtn && container?.classList.contains('scrolling')) {
+      setTimeout(() => {
+        activeBtn.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }, 100);
     }
   }
 
@@ -306,7 +320,7 @@ class BWVNavigationMenu {
         this.handleSwipeGesture();
       }, { passive: true });
     }
-    
+
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey || e.metaKey) {
@@ -580,6 +594,10 @@ function adjustBWVButtonLayout() {
           }
         }
       });
+    }
+    const bwvNav = window.getBWVNavigation();
+    if (bwvNav) {
+      bwvNav.scrollActiveIntoView();
     }
   }
 }
