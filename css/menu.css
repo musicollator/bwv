@@ -101,7 +101,7 @@
 /* Scrolling mode container - left aligned with scroll indicators */
 #bwv-buttons-container.scrolling {
   text-align: left;
-  padding-left: 12%;
+  padding-left: 30%;
   scrollbar-width: none;
 }
 
