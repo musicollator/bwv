@@ -246,25 +246,13 @@ export class Synchronisator {
   // =============================================================================
 
   tickToSeconds(tick) {
-    if (!this.syncData.meta) {
-      throw new Error('tickToSeconds: syncData.meta is null');
-    }
-    
+    // Convert tick to seconds using proportional mapping
+    // Maps tick range [minTick, maxTick] to time range [0, totalDurationSeconds]
     const { minTick, maxTick } = this.syncData.meta;
-    
-    if (minTick === undefined || maxTick === undefined) {
-      console.error('Meta data:', this.syncData.meta);
-      throw new Error('tickToSeconds: minTick or maxTick is undefined');
-    }
+    const totalDuration = this.config.musicalStructure.totalDurationSeconds;
     
     if (maxTick === minTick) {
-      console.warn('tickToSeconds: maxTick equals minTick, returning 0');
       return 0;
-    }
-    
-    const totalDuration = this.config.musicalStructure.totalDurationSeconds;
-    if (!totalDuration) {
-      throw new Error('tickToSeconds: totalDurationSeconds is missing from config');
     }
     
     return ((tick - minTick) / (maxTick - minTick)) * totalDuration;
