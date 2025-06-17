@@ -233,7 +233,7 @@ async function loadConfiguration(workId = null) {
     // Update file paths for new unified format
     const basePath = `${targetWorkId}/exports/`;
     CONFIG.files.svgPath = `${basePath}${targetWorkId}.svg`;
-    CONFIG.files.syncPath = `${basePath}${targetWorkId}.yaml`;
+    CONFIG.files.syncPath = `${basePath}${CONFIG.files.syncPath || `${targetWorkId}.yaml`}`;
     CONFIG.files.audioPath = `${basePath}${CONFIG.files.audioPath}`;
 
     // Store the workId for reference

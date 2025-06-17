@@ -122,13 +122,16 @@ export class Synchronisator {
         // New format: [start_tick, channel, end_tick, hrefs]
         const [startTick, channel, endTick, hrefs] = item;
         
+        const startTime = this.tickToSeconds(startTick);
+        const endTime = this.tickToSeconds(endTick);
+        
         return {
           startTick,
           endTick,
           hrefs: Array.isArray(hrefs) ? hrefs : [hrefs],
           channel: channel || 0, // Channel is now at index 1
-          startTime: this.tickToSeconds(startTick),
-          endTime: this.tickToSeconds(endTick),
+          startTime,
+          endTime,
           elements: this.getElementsForHrefs(hrefs)
         };
       });
@@ -247,15 +250,25 @@ export class Synchronisator {
 
   tickToSeconds(tick) {
     // Convert tick to seconds using proportional mapping
-    // Maps tick range [minTick, maxTick] to time range [0, totalDurationSeconds]
-    const { minTick, maxTick } = this.syncData.meta;
+    // Maps tick range [minTick, maxTick] to musical duration, then adds musicStartSeconds offset
+    const { minTick, maxTick, musicStartSeconds } = this.syncData.meta;
     const totalDuration = this.config.musicalStructure.totalDurationSeconds;
+    const musicalDuration = totalDuration - (musicStartSeconds || 0);
     
     if (maxTick === minTick) {
-      return 0;
+      return musicStartSeconds || 0;
     }
     
-    return ((tick - minTick) / (maxTick - minTick)) * totalDuration;
+    // Map ticks to musical duration, then offset by silence
+    const musicalTime = ((tick - minTick) / (maxTick - minTick)) * musicalDuration;
+    const result = musicalTime + (musicStartSeconds || 0);
+    
+    // Debug first few ticks
+    // if (tick <= 2500) {
+    //   console.log(`🔍 DEBUGGING tick ${tick}: minTick=${minTick}, maxTick=${maxTick}, musicStartSeconds=${musicStartSeconds}, totalDuration=${totalDuration}, musicalDuration=${musicalDuration}, musicalTime=${musicalTime.toFixed(3)}, result=${result.toFixed(3)}`);
+    // }
+    
+    return result;
   }
 
   getCurrentBar(currentTime) {
