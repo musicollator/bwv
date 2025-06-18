@@ -4,6 +4,8 @@ import { Synchronisator } from './synchronisator.mjs';
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
 // Import BWV navigation menu system  
 import { initializeBWVNavigation, adjustBWVButtonLayout } from '/js/menu.js';
+// Import debounce utility
+import debounce from '/js/lodash.debounce.mjs';
 
 import MusicalHighlighter, { quickHighlight, FuguePresets } from '/js/musical-highlighter.js';
 
@@ -354,6 +356,7 @@ async function loadWorkContent(workId, isInitialLoad = false) {
     // Clean up previous sync if it exists
     if (sync) {
       sync.stop();
+      sync.cleanup(); // Clean up event listeners
       sync = null;
     }
 
@@ -361,11 +364,22 @@ async function loadWorkContent(workId, isInitialLoad = false) {
     sync = new Synchronisator(syncData, audio, svgGlobal, CONFIG);
     window.sync = sync; // Make globally accessible
 
-    // Set up custom bar display callback
-    sync.onBarChange = (barNumber) => {
-      currentBarGlobal.innerText = barNumber;
-      scrollToBar(barNumber);
-    };
+    // Initialize audio event handlers with UI callbacks
+    sync.initializeAudioEventHandlers({
+      onPlayStateChange: (isPlaying) => {
+        setPlayingState(isPlaying);
+      },
+      onBarChange: (barNumber) => {
+        currentBarGlobal.innerText = barNumber;
+        scrollToBar(barNumber);
+      },
+      onSeekStart: () => {
+        bodyGlobal?.classList.add('seeking');
+      },
+      onSeekEnd: () => {
+        bodyGlobal?.classList.remove('seeking');
+      }
+    });
 
     // 6. Apply channel colors and other work-specific features
     applyChannelColors(syncData);
@@ -546,18 +560,6 @@ function positionButtons() {
 // PERFORMANCE OPTIMIZATION
 // =============================================================================
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
-
 const debouncedPositionButtons = debounce(positionButtons, 50);
 const debouncedCheckScroll = debounce(checkScrollButtonVisibility, 50);
 const debouncedAdjustBWV = debounce(adjustBWVButtonLayout, 50);
@@ -678,76 +680,7 @@ function initEventHandlers() {
 
   window.addEventListener('scroll', debouncedCheckScroll);
 
-  // Audio event handlers - these work with any sync instance
-  audio.addEventListener("play", () => {
-    setPlayingState(true);
-    sync?.start();
-  });
-
-  audio.addEventListener("pause", () => {
-    setPlayingState(false);
-    sync?.stop();
-  });
-
-  audio.addEventListener("ended", () => {
-    setPlayingState(false);
-    sync?.stop();
-    audio.currentTime = 0;
-  });
-
-  // Seeking handlers - simple debounced approach
-  let userIsSeeking = false;
-  let programmaticSeek = false;
-  
-  // Simple debounced bar snapping
-  const debouncedBarSnap = debounce(() => {
-    if (programmaticSeek || !userIsSeeking || !sync) {
-      return;
-    }
-    
-    // Clear user seeking state FIRST to prevent re-entry
-    userIsSeeking = false;
-    bodyGlobal?.classList.remove('seeking');
-    
-    const currentAudioTime = audio.currentTime;
-    const visualTime = sync.getVisualTime();
-    const currentBar = sync.getCurrentBar(visualTime);
-    const barStartTime = sync.snapToBarStart();
-    
-    // Only snap if there's a meaningful difference
-    if (Math.abs(currentAudioTime - barStartTime) > 0.1) {
-      programmaticSeek = true;
-      audio.currentTime = barStartTime;
-      
-      // Force visual sync update after snapping
-      setTimeout(() => {
-        sync.updateVisualSync(barStartTime);
-      }, 50); // Small delay to ensure audio time has been set
-    }
-  }, 500); // Longer delay to ensure user has finished
-  
-  // Track when user starts seeking
-  audio.addEventListener('seeking', () => {
-    if (!programmaticSeek) {
-      bodyGlobal?.classList.add('seeking');
-      userIsSeeking = true;
-    }
-    if (sync) {
-      const visualTime = sync.getVisualTime();
-      sync.updateVisualSync(visualTime);
-    }
-  });
-
-  // Track when seek operation completes
-  audio.addEventListener("seeked", () => {
-    if (programmaticSeek) {
-      programmaticSeek = false;
-      return;
-    }
-    
-    // Trigger debounced bar snapping (which handles sync.seek internally)
-    debouncedBarSnap();
-  });
+  // Audio event handlers are now managed by Synchronisator.initializeAudioEventHandlers()
 }
 
 // =============================================================================

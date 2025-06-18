@@ -8,6 +8,8 @@
 
 // Import intelligent channel to color mapping (reads from CSS)
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
+// Import debounce utility
+import debounce from '/js/lodash.debounce.mjs';
 
 export class Synchronisator {
   constructor(syncData, audioElement, svgElement, config) {
@@ -112,9 +114,9 @@ export class Synchronisator {
   }
 
   processNotes() {
-    // Extract notes from flow data (filter out bars, handle new format)
+    // Extract notes from flow data (filter out bars and fermatas)
     const flowNotes = this.syncData.flow
-      .filter(item => item.length >= 3 && item[3] !== 'bar') // Notes have 3-4 elements, bars have 'bar' as 4th element
+      .filter(item => item.length >= 3 && item[3] !== 'bar' && item[3] !== 'fermata') // Filter out bars and fermatas
       .map(item => {
         // New format: [start_tick, channel, end_tick, hrefs]
         const [startTick, channel, endTick, hrefs] = item;
@@ -150,7 +152,7 @@ export class Synchronisator {
     const notesWithoutElements = flowNotes.filter(note => note.elements.length === 0);
     if (notesWithoutElements.length > 0) {
       console.warn(`⚠️  ${notesWithoutElements.length} notes have no matching SVG elements`);
-      // console.log('🔍 Sample missing hrefs:', notesWithoutElements.slice(0, 5).map(n => n.hrefs));
+      console.log('🔍 Sample missing hrefs:', notesWithoutElements.slice(0, 5).map(n => n.hrefs));
 
       // Show available data-ref values for comparison
       // const availableRefs = Array.from(this.noteElementsCache.keys()).slice(0, 10);
@@ -478,6 +480,11 @@ export class Synchronisator {
     }
 
     this.currentVisibleBar = barNumber;
+
+    // Call the bar change callback if it exists
+    if (this.onBarChange) {
+      this.onBarChange(barNumber);
+    }
   }
 
   hideAllBars() {
@@ -544,13 +551,121 @@ export class Synchronisator {
   }
 
   // =============================================================================
-  // EVENT LISTENERS HELPER
+  // AUDIO EVENT HANDLERS
   // =============================================================================
 
-  attachAudioEvents() {
-    this.audio.addEventListener('play', () => this.start());
-    this.audio.addEventListener('pause', () => this.stop());
-    this.audio.addEventListener('ended', () => this.stop());
-    this.audio.addEventListener('seeked', () => this.seek(this.audio.currentTime));
+  initializeAudioEventHandlers(callbacks = {}) {
+    // Store callbacks for UI updates
+    this.callbacks = {
+      onPlayStateChange: callbacks.onPlayStateChange || (() => {}),
+      onBarChange: callbacks.onBarChange || (() => {}),
+      onSeekStart: callbacks.onSeekStart || (() => {}),
+      onSeekEnd: callbacks.onSeekEnd || (() => {})
+    };
+
+    // Set up bar change callback
+    this.onBarChange = (barNumber) => {
+      this.callbacks.onBarChange(barNumber);
+    };
+
+    // Only initialize event listeners once per audio element
+    if (!this.audio._bwvEventListenersInitialized) {
+      // Audio play event
+      this.audio.addEventListener("play", this._handlePlay = () => {
+        this.callbacks.onPlayStateChange(true);
+        this.start();
+      });
+
+      // Audio pause event
+      this.audio.addEventListener("pause", this._handlePause = () => {
+        this.callbacks.onPlayStateChange(false);
+        this.stop();
+      });
+
+      // Audio ended event
+      this.audio.addEventListener("ended", this._handleEnded = () => {
+        this.callbacks.onPlayStateChange(false);
+        this.stop();
+        this.audio.currentTime = 0;
+      });
+
+      // Seeking handlers - handle bar snapping and visual sync
+      this.initializeSeekingHandlers();
+
+      // Mark as initialized to prevent duplicate listeners
+      this.audio._bwvEventListenersInitialized = true;
+    }
   }
+
+  // Clean up event listeners (called when Synchronisator is destroyed)
+  cleanup() {
+    if (this.audio._bwvEventListenersInitialized) {
+      this.audio.removeEventListener("play", this._handlePlay);
+      this.audio.removeEventListener("pause", this._handlePause);
+      this.audio.removeEventListener("ended", this._handleEnded);
+      
+      // Clean up seeking handlers
+      if (this._handleSeeking) {
+        this.audio.removeEventListener("seeking", this._handleSeeking);
+      }
+      if (this._handleSeeked) {
+        this.audio.removeEventListener("seeked", this._handleSeeked);
+      }
+      
+      this.audio._bwvEventListenersInitialized = false;
+    }
+  }
+
+  initializeSeekingHandlers() {
+    let userIsSeeking = false;
+    let programmaticSeek = false;
+    
+    // Simple debounced bar snapping
+    const debouncedBarSnap = debounce(() => {
+      if (programmaticSeek || !userIsSeeking) {
+        return;
+      }
+      
+      // Clear user seeking state FIRST to prevent re-entry
+      userIsSeeking = false;
+      this.callbacks.onSeekEnd();
+      
+      const currentAudioTime = this.audio.currentTime;
+      const barStartTime = this.snapToBarStart();
+      
+      // Only snap if there's a meaningful difference
+      if (Math.abs(currentAudioTime - barStartTime) > 0.1) {
+        programmaticSeek = true;
+        this.audio.currentTime = barStartTime;
+        
+        // Force visual sync update after snapping
+        setTimeout(() => {
+          this.updateVisualSync(barStartTime);
+        }, 50); // Small delay to ensure audio time has been set
+      }
+    }, 500); // Longer delay to ensure user has finished
+    
+    // Track when user starts seeking
+    this.audio.addEventListener('seeking', this._handleSeeking = () => {
+      if (!programmaticSeek) {
+        this.callbacks.onSeekStart();
+        userIsSeeking = true;
+      }
+      const visualTime = this.getVisualTime();
+      this.updateVisualSync(visualTime);
+    });
+
+    // Track when seek operation completes
+    this.audio.addEventListener("seeked", this._handleSeeked = () => {
+      if (programmaticSeek) {
+        programmaticSeek = false;
+        return;
+      }
+      
+      // Trigger debounced bar snapping
+      debouncedBarSnap();
+    });
+  }
+
+
 }
