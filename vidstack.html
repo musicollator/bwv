@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minimal Vidstack Audio Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+
+  <!-- Vidstack Audio Player -->
+  <media-player
+    title="Sample Audio"
+    src="bwv245/exports/bwv245.wav"
+    crossorigin
+    controls
+    aspect-ratio="16/9"
+  >
+    <media-provider></media-provider>
+  </media-player>
+
+  <!-- ESM Script -->
+  <script type="module">
+    import 'https://cdn.vidstack.io/player';
+  </script>
+
+</body>
+</html>
