@@ -185,18 +185,23 @@ body.playing #svg-container > svg path[data-ref].active.channel-5 {
    BAR HIGHLIGHTING
    ============================================================================= */
 
+/* Current bar visible when playing (taupe) */
 body.playing:not(.seeking) #svg-container > svg rect[data-bar] {
-  fill: var(--bach-taupe) !important; /* Override SVG's fill:none */
+  fill: var(--bach-taupe) !important;
   fill-opacity: 0.3 !important;
   filter: none;
 }
 
-body:not(.playing) #svg-container > svg rect[data-bar] {
-  visibility: hidden;
+/* Current bar visible when seeking (brown) */
+body.seeking #svg-container > svg rect[data-bar] {
+  fill: var(--bach-brown) !important;
+  fill-opacity: 0.4 !important;
+  filter: none;
 }
 
-body.seeking #svg-container > svg rect[data-bar] {
-  filter: blur(1rem) drop-shadow(0 0 0.2rem var(--bach-dark));
+/* Hide bars when not playing and not seeking */
+body:not(.playing):not(.seeking) #svg-container > svg rect[data-bar] {
+  visibility: hidden;
 }
 
 /* =============================================================================
@@ -221,8 +226,9 @@ body.svg-at-top #button_scroll_to_top {
 }
 
 body.seeking #bar_spy {
-  filter: drop-shadow(0 0 0.2rem var(--bach-dark));
-  transition: filter 0.1s ease, width 0.1s ease;
+  background-color: var(--bach-brown) !important;
+  color: var(--bach-cream) !important;
+  transition: background-color 0.1s ease, color 0.1s ease;
 }
 
 body.seeking #bar_spy :first-child {
