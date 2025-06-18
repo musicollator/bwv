@@ -695,20 +695,58 @@ function initEventHandlers() {
     audio.currentTime = 0;
   });
 
-  // Seeking handlers
-  let seekingTimeout;
+  // Seeking handlers - simple debounced approach
+  let userIsSeeking = false;
+  let programmaticSeek = false;
+  
+  // Simple debounced bar snapping
+  const debouncedBarSnap = debounce(() => {
+    if (programmaticSeek || !userIsSeeking || !sync) {
+      return;
+    }
+    
+    // Clear user seeking state FIRST to prevent re-entry
+    userIsSeeking = false;
+    bodyGlobal?.classList.remove('seeking');
+    
+    const currentAudioTime = audio.currentTime;
+    const visualTime = sync.getVisualTime();
+    const currentBar = sync.getCurrentBar(visualTime);
+    const barStartTime = sync.snapToBarStart();
+    
+    // Only snap if there's a meaningful difference
+    if (Math.abs(currentAudioTime - barStartTime) > 0.1) {
+      programmaticSeek = true;
+      audio.currentTime = barStartTime;
+      
+      // Force visual sync update after snapping
+      setTimeout(() => {
+        sync.updateVisualSync(barStartTime);
+      }, 50); // Small delay to ensure audio time has been set
+    }
+  }, 500); // Longer delay to ensure user has finished
+  
+  // Track when user starts seeking
   audio.addEventListener('seeking', () => {
-    bodyGlobal?.classList.add('seeking');
-    clearTimeout(seekingTimeout);
-    sync?.seek(audio.currentTime);
+    if (!programmaticSeek) {
+      bodyGlobal?.classList.add('seeking');
+      userIsSeeking = true;
+    }
+    if (sync) {
+      const visualTime = sync.getVisualTime();
+      sync.updateVisualSync(visualTime);
+    }
   });
 
+  // Track when seek operation completes
   audio.addEventListener("seeked", () => {
-    clearTimeout(seekingTimeout);
-    seekingTimeout = setTimeout(() => {
-      bodyGlobal?.classList.remove('seeking');
-    }, 1000);
-    sync?.seek(audio.currentTime);
+    if (programmaticSeek) {
+      programmaticSeek = false;
+      return;
+    }
+    
+    // Trigger debounced bar snapping (which handles sync.seek internally)
+    debouncedBarSnap();
   });
 }
 

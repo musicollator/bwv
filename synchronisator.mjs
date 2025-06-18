@@ -57,6 +57,7 @@ export class Synchronisator {
     // Callbacks
     this.onBarChange = null; // Callback for when bar changes
     
+    
     // console.log('🎼 Synchronisator initializing with data:', {
     //   meta: this.syncData.meta,
     //   flowItems: this.syncData.flow?.length,
@@ -325,13 +326,11 @@ export class Synchronisator {
     // console.log('⏹️ Playback stopped');
   }
 
-  seek(targetTime) {
-    const visualTime = targetTime + (this.config.musicalStructure.visualLeadTimeSeconds || 0);
-    
-    // Reset note states based on seek position
-    this.remainingNotes = this.notes.filter(note => note.startTime > visualTime);
+  updateVisualSync(targetTime) {
+    // Reset note states based on target time
+    this.remainingNotes = this.notes.filter(note => note.startTime > targetTime);
     this.activeNotes = this.notes.filter(note => 
-      note.startTime <= visualTime && note.endTime > visualTime
+      note.startTime <= targetTime && note.endTime > targetTime
     );
     
     // Update visual state
@@ -339,16 +338,39 @@ export class Synchronisator {
     this.activeNotes.forEach(note => this.highlightNote(note));
     
     // Update bar visibility
-    const currentBar = this.getCurrentBar(visualTime);
+    const currentBar = this.getCurrentBar(targetTime);
     this.showBar(currentBar);
     
-    // console.log(`⏭️ Seeked to ${targetTime.toFixed(2)}s (bar ${currentBar})`);
+    // console.log(`⏭️ Updated visual sync to ${targetTime.toFixed(2)}s (bar ${currentBar})`);
   }
 
   resetNoteState() {
     this.remainingNotes = [...this.notes];
     this.activeNotes = [];
     this.currentVisibleBar = -1;
+  }
+
+  getBarStartTime(barNumber) {
+    // Extract bar start time from flow data
+    const barTimings = this.syncData.flow
+      .filter(item => item.length === 4 && item[3] === 'bar')
+      .map(([tick, , barNum]) => ({
+        barNumber: barNum,
+        startTime: this.tickToSeconds(tick)
+      }));
+    
+    const barData = barTimings.find(bar => bar.barNumber === barNumber);
+    return barData ? barData.startTime : 0;
+  }
+
+  snapToBarStart() {
+    const visualTime = this.getVisualTime();
+    const currentBar = this.getCurrentBar(visualTime);
+    const barStartTime = this.getBarStartTime(currentBar);
+    
+    // Account for visual lead time when setting audio position
+    const leadTime = this.config.musicalStructure.visualLeadTimeSeconds || 0;
+    return barStartTime - leadTime;
   }
 
   // =============================================================================
