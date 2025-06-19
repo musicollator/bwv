@@ -347,22 +347,25 @@ async function loadWorkContent(workId, isInitialLoad = false) {
       throw new Error("SVG element not found in loaded content");
     }
 
-    // 4. Stop current audio and sync (only if not initial load)
-    if (!isInitialLoad) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
-    
-    // Clean up previous sync if it exists
+    // 4. Clean up previous sync if it exists (before changing audio time)
     if (sync) {
       sync.stop();
       sync.cleanup(); // Clean up event listeners
       sync = null;
     }
+    
+    // Stop current audio (only if not initial load)
+    if (!isInitialLoad) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
 
     // 5. Initialize new synchronization system
     sync = new Synchronisator(syncData, audio, svgGlobal, CONFIG);
     window.sync = sync; // Make globally accessible
+
+    // Small delay to avoid any residual seeking events from currentTime change
+    await new Promise(resolve => setTimeout(resolve, 10));
 
     // Initialize audio event handlers with UI callbacks
     sync.initializeAudioEventHandlers({
@@ -399,8 +402,8 @@ async function loadWorkContent(workId, isInitialLoad = false) {
     // 9. Update UI state (only reset highlights if not initial load)
     if (isInitialLoad) {
       // Just set the current bar, don't try to clear highlights yet
-      if (currentBarGlobal) {
-        currentBarGlobal.innerText = '1';
+      if (currentBarGlobal && sync) {
+        currentBarGlobal.innerText = sync.firstBarNumber?.toString() || '1';
       }
       setPlayingState(false);
     } else {
@@ -415,7 +418,7 @@ async function loadWorkContent(workId, isInitialLoad = false) {
       loadingElement.classList.add('d-none');
     }
 
-    console.log(`✅ Successfully loaded ${workId}: ${sync.getStats().totalNotes} notes, ${sync.barElementsCache.size} bars`);
+    console.log(`✅ Successfully loaded ${workId}: ${sync.getStats().totalNotes} notes, ${sync.barCache.length} bars`);
     
     return true;
 
@@ -428,8 +431,8 @@ async function loadWorkContent(workId, isInitialLoad = false) {
 
 // Reset current bar display
 function updatePlaybackState() {
-  if (currentBarGlobal) {
-    currentBarGlobal.innerText = '1';
+  if (currentBarGlobal && sync) {
+    currentBarGlobal.innerText = sync.firstBarNumber?.toString() || '1';
   }
   
   // Reset playing state
@@ -474,8 +477,10 @@ function checkScrollButtonVisibility() {
 function scrollToBar(barNumber) {
   if (!sync) return;
 
-  const barElements = sync.barElementsCache.get(barNumber);
-  if (!barElements || barElements.length === 0) return;
+  const barData = sync.barCache[barNumber];
+  if (!barData || !barData.elements || barData.elements.length === 0) return;
+  
+  const barElements = barData.elements;
 
   let minTop = Infinity, maxBottom = -Infinity;
   barElements.forEach(barElement => {

@@ -8,8 +8,8 @@
 
 // Import intelligent channel to color mapping (reads from CSS)
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
-// Import debounce utility
-import debounce from '/js/lodash.debounce.mjs';
+// Import lodash utilities
+import debounce, { sortedIndex } from '/js/lodash.debounce.mjs';
 
 export class Synchronisator {
   constructor(syncData, audioElement, svgElement, config) {
@@ -52,9 +52,12 @@ export class Synchronisator {
     // Channel color mapping
     this.channelColorMap = new Map();
 
-    // Performance: Cache DOM elements
-    this.barElementsCache = new Map();  // barNumber -> elements[]
+    // Performance: Cache DOM elements and computed data
+    this.barCache = []; // barNumber -> {elements, startTime} (direct array access)
     this.noteElementsCache = new Map(); // data-ref -> elements[]
+    this.barStartTimesCache = null; // Cached start times array for binary search
+    this.firstBarNumber = null; // First available bar number (could be 0 for anacrusis)
+    this.visualLeadTime = this.config.musicalStructure.visualLeadTimeSeconds || 0; // Cached lead time
 
     // console.log('🎼 Synchronisator initializing with data:', {
     //   meta: this.syncData.meta,
@@ -72,6 +75,7 @@ export class Synchronisator {
   initialize() {
     this.buildElementCaches();
     this.processNotes();
+    this.buildBarTimingsCache();
     this.setupChannelColorMapping();
     // console.log(`🎼 Synchronisator initialized: ${this.notes.length} notes, ${this.barElementsCache.size} bars`);
   }
@@ -83,10 +87,10 @@ export class Synchronisator {
 
     barElements.forEach(element => {
       const barNumber = parseInt(element.getAttribute('data-bar'));
-      if (!this.barElementsCache.has(barNumber)) {
-        this.barElementsCache.set(barNumber, []);
+      if (!this.barCache[barNumber]) {
+        this.barCache[barNumber] = { elements: [], startTime: null };
       }
-      this.barElementsCache.get(barNumber).push(element);
+      this.barCache[barNumber].elements.push(element);
     });
 
     // Cache note elements  
@@ -96,7 +100,7 @@ export class Synchronisator {
     if (noteElements.length === 0) {
       console.warn('⚠️  No elements with data-ref found! Check SVG structure.');
       // Debug: show first few elements in SVG
-      const allPaths = this.svg.querySelectorAll('path');
+      // const allPaths = this.svg.querySelectorAll('path');
       // console.log('📋 First 3 path elements:', Array.from(allPaths).slice(0, 3).map(el => ({
       //   attributes: Object.fromEntries(Array.from(el.attributes).map(attr => [attr.name, attr.value]))
       // })));
@@ -110,7 +114,35 @@ export class Synchronisator {
       this.noteElementsCache.get(dataRef).push(element);
     });
 
-    // console.log(`📊 Cached elements: ${this.barElementsCache.size} bars, ${this.noteElementsCache.size} unique note refs`);
+    // console.log(`📊 Cached elements: ${this.barCache.length} bars, ${this.noteElementsCache.size} unique note refs`);
+  }
+
+  buildBarTimingsCache() {
+    // Pre-compute bar timings and populate barCache with startTime
+    const barTimings = this.syncData.flow
+      .filter(item => item.length === 4 && item[3] === 'bar')
+      .map(([tick, , barNumber]) => ({
+        barNumber,
+        startTime: this.tickToSeconds(tick)
+      }))
+      .sort((a, b) => a.startTime - b.startTime);
+    
+    // Populate barCache with timing data and track first bar
+    barTimings.forEach(({ barNumber, startTime }) => {
+      if (this.firstBarNumber === null || barNumber < this.firstBarNumber) {
+        this.firstBarNumber = barNumber;
+      }
+      
+      if (!this.barCache[barNumber]) {
+        this.barCache[barNumber] = { elements: [], startTime };
+      } else {
+        this.barCache[barNumber].startTime = startTime;
+      }
+    });
+    
+    // Cache start times array for efficient binary search
+    this.barStartTimesCache = barTimings.map(bar => bar.startTime);
+    this.barNumbersCache = barTimings.map(bar => bar.barNumber);
   }
 
   processNotes() {
@@ -128,7 +160,7 @@ export class Synchronisator {
           startTick,
           endTick,
           hrefs: Array.isArray(hrefs) ? hrefs : [hrefs],
-          channel: channel || 0, // Channel is now at index 1
+          channel: channel || 0, 
           startTime,
           endTime,
           elements: this.getElementsForHrefs(hrefs)
@@ -152,7 +184,7 @@ export class Synchronisator {
     const notesWithoutElements = flowNotes.filter(note => note.elements.length === 0);
     if (notesWithoutElements.length > 0) {
       console.warn(`⚠️  ${notesWithoutElements.length} notes have no matching SVG elements`);
-      console.log('🔍 Sample missing hrefs:', notesWithoutElements.slice(0, 5).map(n => n.hrefs));
+      // console.log('🔍 Sample missing hrefs:', notesWithoutElements.slice(0, 5).map(n => n.hrefs));
 
       // Show available data-ref values for comparison
       // const availableRefs = Array.from(this.noteElementsCache.keys()).slice(0, 10);
@@ -162,7 +194,7 @@ export class Synchronisator {
     // Sort by start time (notes should already be sorted by the Python script)
     this.notes = flowNotes.sort((a, b) => a.startTime - b.startTime);
 
-    const notesWithElements = this.notes.filter(note => note.elements.length > 0);
+    // const notesWithElements = this.notes.filter(note => note.elements.length > 0);
     // console.log(`✅ ${notesWithElements.length}/${this.notes.length} notes have matching SVG elements`);
 
     // Log channel distribution
@@ -271,28 +303,15 @@ export class Synchronisator {
   }
 
   getCurrentBar(currentTime) {
-    // Extract bar data from flow - bars are still [tick, None, bar_number, 'bar']
-    const barTimings = this.syncData.flow
-      .filter(item => item.length === 4 && item[3] === 'bar')
-      .map(([tick, , barNumber]) => ({
-        barNumber,
-        startTime: this.tickToSeconds(tick)
-      }))
-      .sort((a, b) => a.startTime - b.startTime);
-
-    // Find current bar
-    for (let i = barTimings.length - 1; i >= 0; i--) {
-      if (currentTime >= barTimings[i].startTime) {
-        return barTimings[i].barNumber;
-      }
-    }
-
-    return barTimings[0]?.barNumber || 1;
+    // Use binary search - if no bars or before first bar, return -1
+    const index = sortedIndex(this.barStartTimesCache, currentTime);
+    const timingIndex = index - 1;
+    
+    return timingIndex >= 0 ? this.barNumbersCache[timingIndex] : -1;
   }
 
   getVisualTime() {
-    const leadTime = this.config.musicalStructure.visualLeadTimeSeconds || 0;
-    return this.audio.currentTime + leadTime;
+    return this.audio.currentTime + this.visualLeadTime;
   }
 
   // =============================================================================
@@ -349,16 +368,8 @@ export class Synchronisator {
   }
 
   getBarStartTime(barNumber) {
-    // Extract bar start time from flow data
-    const barTimings = this.syncData.flow
-      .filter(item => item.length === 4 && item[3] === 'bar')
-      .map(([tick, , barNum]) => ({
-        barNumber: barNum,
-        startTime: this.tickToSeconds(tick)
-      }));
-
-    const barData = barTimings.find(bar => bar.barNumber === barNumber);
-    return barData ? barData.startTime : 0;
+    // Use direct array access for O(1) lookup
+    return this.barCache[barNumber]?.startTime || 0;
   }
 
   snapToBarStart() {
@@ -367,8 +378,7 @@ export class Synchronisator {
     const barStartTime = this.getBarStartTime(currentBar);
 
     // Account for visual lead time when setting audio position
-    const leadTime = this.config.musicalStructure.visualLeadTimeSeconds || 0;
-    return barStartTime - leadTime;
+    return barStartTime - this.visualLeadTime;
   }
 
   // =============================================================================
@@ -463,18 +473,20 @@ export class Synchronisator {
   showBar(barNumber) {
     if (barNumber === this.currentVisibleBar) return;
 
-    this.barElementsCache.forEach(elements => {
-      elements.forEach(element => {
-        element.style.visibility = 'hidden';
-      });
+    this.barCache.forEach(barData => {
+      if (barData) {
+        barData.elements.forEach(element => {
+          element.style.visibility = 'hidden';
+        });
+      }
     });
     this.currentVisibleBar = -1;
 
     if (barNumber === -1) return;
 
-    const barElements = this.barElementsCache.get(barNumber);
-    if (barElements) {
-      barElements.forEach(element => {
+    const barData = this.barCache[barNumber];
+    if (barData) {
+      barData.elements.forEach(element => {
         element.style.visibility = 'visible';
       });
     }
@@ -502,7 +514,7 @@ export class Synchronisator {
       currentBar: this.currentVisibleBar,
       isPlaying: this.isPlaying,
       notesWithElements: this.notes.filter(n => n.elements.length > 0).length,
-      cachedBars: this.barElementsCache.size,
+      cachedBars: this.barCache.length,
       cachedNoteRefs: this.noteElementsCache.size,
       channelMapping: Object.fromEntries(this.channelColorMap)
     };
@@ -521,7 +533,7 @@ export class Synchronisator {
     console.log('📊 Stats:', this.getStats());
     console.log('🎵 Sample notes:', this.notes.slice(0, 3));
     console.log('📋 Available data-refs:', Array.from(this.noteElementsCache.keys()).slice(0, 10));
-    console.log('🎼 Cached bars:', Array.from(this.barElementsCache.keys()).sort((a, b) => a - b));
+    console.log('🎼 Cached bars:', this.barCache.map((bar, index) => bar ? index : null).filter(Boolean));
     console.log('🎨 Channel mapping:', Object.fromEntries(this.channelColorMap));
 
     // Check CSS
@@ -651,8 +663,11 @@ export class Synchronisator {
         this.callbacks.onSeekStart();
         userIsSeeking = true;
       }
-      const visualTime = this.getVisualTime();
-      this.updateVisualSync(visualTime);
+      // Skip visual sync during initialization (no bars cached yet)
+      if (this.barCache.length > 0) {
+        const visualTime = this.getVisualTime();
+        this.updateVisualSync(visualTime);
+      }
     });
 
     // Track when seek operation completes
