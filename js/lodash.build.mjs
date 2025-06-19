@@ -1,4 +1,4 @@
-// lodash.debounce.mjs
+// lodash.build.mjs
 
 // --- Internal helpers ---
 function isObject(value) {

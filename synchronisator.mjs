@@ -9,7 +9,7 @@
 // Import intelligent channel to color mapping (reads from CSS)
 import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour.js';
 // Import lodash utilities
-import debounce, { sortedIndex } from '/js/lodash.debounce.mjs';
+import debounce, { sortedIndex } from '/js/lodash.build.mjs';
 
 export class Synchronisator {
   constructor(syncData, audioElement, svgElement, config) {

@@ -5,7 +5,7 @@ import { createChannelColorMapping, logChannelMapping } from '/js/channel2colour
 // Import BWV navigation menu system  
 import { initializeBWVNavigation, adjustBWVButtonLayout } from '/js/menu.js';
 // Import debounce utility
-import debounce from '/js/lodash.debounce.mjs';
+import debounce from '/js/lodash.build.mjs';
 
 import MusicalHighlighter, { quickHighlight, FuguePresets } from '/js/musical-highlighter.js';
 
