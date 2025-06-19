@@ -53,7 +53,7 @@ export class Synchronisator {
     this.channelColorMap = new Map();
 
     // Performance: Cache DOM elements
-    this.barElementsCache = new Map(); // barNumber -> elements[]
+    this.barElementsCache = new Map();  // barNumber -> elements[]
     this.noteElementsCache = new Map(); // data-ref -> elements[]
 
     // console.log('🎼 Synchronisator initializing with data:', {
@@ -557,10 +557,10 @@ export class Synchronisator {
   initializeAudioEventHandlers(callbacks = {}) {
     // Store callbacks for UI updates
     this.callbacks = {
-      onPlayStateChange: callbacks.onPlayStateChange || (() => {}),
-      onBarChange: callbacks.onBarChange || (() => {}),
-      onSeekStart: callbacks.onSeekStart || (() => {}),
-      onSeekEnd: callbacks.onSeekEnd || (() => {})
+      onPlayStateChange: callbacks.onPlayStateChange || (() => { }),
+      onBarChange: callbacks.onBarChange || (() => { }),
+      onSeekStart: callbacks.onSeekStart || (() => { }),
+      onSeekEnd: callbacks.onSeekEnd || (() => { })
     };
 
     // Set up bar change callback
@@ -603,7 +603,7 @@ export class Synchronisator {
       this.audio.removeEventListener("play", this._handlePlay);
       this.audio.removeEventListener("pause", this._handlePause);
       this.audio.removeEventListener("ended", this._handleEnded);
-      
+
       // Clean up seeking handlers
       if (this._handleSeeking) {
         this.audio.removeEventListener("seeking", this._handleSeeking);
@@ -611,7 +611,7 @@ export class Synchronisator {
       if (this._handleSeeked) {
         this.audio.removeEventListener("seeked", this._handleSeeked);
       }
-      
+
       this.audio._bwvEventListenersInitialized = false;
     }
   }
@@ -619,32 +619,32 @@ export class Synchronisator {
   initializeSeekingHandlers() {
     let userIsSeeking = false;
     let programmaticSeek = false;
-    
+
     // Simple debounced bar snapping
     const debouncedBarSnap = debounce(() => {
       if (programmaticSeek || !userIsSeeking) {
         return;
       }
-      
+
       // Clear user seeking state FIRST to prevent re-entry
       userIsSeeking = false;
       this.callbacks.onSeekEnd();
-      
+
       const currentAudioTime = this.audio.currentTime;
       const barStartTime = this.snapToBarStart();
-      
+
       // Only snap if there's a meaningful difference
       if (Math.abs(currentAudioTime - barStartTime) > 0.1) {
         programmaticSeek = true;
         this.audio.currentTime = barStartTime;
-        
+
         // Force visual sync update after snapping
         setTimeout(() => {
           this.updateVisualSync(barStartTime);
         }, 50); // Small delay to ensure audio time has been set
       }
     }, 500); // Longer delay to ensure user has finished
-    
+
     // Track when user starts seeking
     this.audio.addEventListener('seeking', this._handleSeeking = () => {
       if (!programmaticSeek) {
@@ -661,7 +661,7 @@ export class Synchronisator {
         programmaticSeek = false;
         return;
       }
-      
+
       // Trigger debounced bar snapping
       debouncedBarSnap();
     });
