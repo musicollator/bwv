@@ -74,23 +74,6 @@ git add bwv245
 git commit -m "Update bwv245 submodule"
 ```
 
-## Troubleshooting
-
-If sparse checkout isn't working properly, try this sequence:
-
-```bash
-cd bwv/bwv245
-git config core.sparseCheckout true
-rm ../.git/modules/bwv245/info/sparse-checkout
-
-# Recreate sparse-checkout file with exports directory only
-echo "exports" > ../.git/modules/bwv245/info/sparse-checkout
-
-# Force apply the configuration
-git read-tree -m -u HEAD
-git reset --hard HEAD
-```
-
 ## Current Sparse Checkout Configuration
 
 The submodule is configured to include only:
