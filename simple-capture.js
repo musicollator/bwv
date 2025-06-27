@@ -166,7 +166,7 @@ class SimpleBachCapture {
     console.log('✅ Page configured for capture');
   }
 
-  async captureFrame(frameNumber) {
+async captureFrame(frameNumber) {
     const relativeTime = frameNumber / this.options.fps;
     const absoluteTime = this.options.startTime + relativeTime;
 
@@ -216,61 +216,20 @@ class SimpleBachCapture {
 
     await new Promise(resolve => setTimeout(resolve, 50));
 
-    const frameFileName = `frame_${frameNumber.toString().padStart(6, '0')}.png`;
+    // FAST APPROACH: Simple full-page capture with JPEG compression
+    const frameFileName = `frame_${frameNumber.toString().padStart(6, '0')}.jpg`; // JPEG extension
     const framePath = path.join(this.options.outputDir, frameFileName);
 
-    // FAST APPROACH: Get SVG info and smart crop in one call
-    const cropInfo = await this.page.evaluate(() => {
-      const svg = document.querySelector('#svg-container svg');
-      if (!svg) return null;
-
-      const svgRect = svg.getBoundingClientRect();
-      
-      // Find currently visible/active bar for smart cropping
-      const visibleBar = document.querySelector('[data-bar][style*="visible"]') || 
-                         document.querySelector('[data-bar]'); // Fallback to any bar
-
-      let cropY = 0;
-      const cropHeight = 600; // Show ~4-5 lines of music
-
-      if (visibleBar) {
-        const barRect = visibleBar.getBoundingClientRect();
-        const relativeBarY = barRect.top - svgRect.top;
-        // Center the crop around the current bar
-        cropY = Math.max(0, Math.min(relativeBarY - 200, svgRect.height - cropHeight));
-      }
-
-      return {
-        svgX: svgRect.left,
-        svgY: svgRect.top,
-        svgWidth: svgRect.width,
-        svgHeight: svgRect.height,
-        cropX: svgRect.left,
-        cropY: svgRect.top + cropY,
-        cropWidth: svgRect.width,
-        cropHeight: Math.min(cropHeight, svgRect.height)
-      };
-    });
-
-    if (!cropInfo) {
-      throw new Error(`SVG element not found at frame ${frameNumber}`);
-    }
-
-    // Capture just the cropped section (much faster than full SVG)
     await this.page.screenshot({
       path: framePath,
-      type: 'png',
-      clip: {
-        x: cropInfo.cropX,
-        y: cropInfo.cropY,
-        width: cropInfo.cropWidth,
-        height: cropInfo.cropHeight
-      }
+      type: 'jpeg',      // JPEG instead of PNG - much faster compression
+      quality: 90,       // High quality JPEG
+      fullPage: false,   // Viewport only
+      captureBeyondViewport: false
     });
 
     return framePath;
   }
-
   async captureAll() {
     console.log('🎬 Starting Bach animation capture...');
 
@@ -299,7 +258,7 @@ class SimpleBachCapture {
       'ffmpeg',
       '-y', // Overwrite output
       '-r', this.options.fps.toString(),
-      '-i', `${this.options.outputDir}/frame_%06d.png`,
+      '-i', `${this.options.outputDir}/frame_%06d.jpg`,
       '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p',
       '-vf', `fps=${this.options.fps}`, // Match input fps
