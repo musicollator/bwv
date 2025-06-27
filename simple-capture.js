@@ -167,31 +167,26 @@ class SimpleBachCapture {
   }
 
   async captureFrame(frameNumber) {
-    const relativeTime = frameNumber / this.options.fps; // Time within the capture duration
-    const absoluteTime = this.options.startTime + relativeTime; // Actual time in the full animation
+    const relativeTime = frameNumber / this.options.fps;
+    const absoluteTime = this.options.startTime + relativeTime;
 
     // Directly control the synchronisator for this exact time
     await this.page.evaluate((time, frameNum, relTime) => {
       if (window.sync) {
-        // Enable playing state for CSS styling
         const body = document.querySelector('body');
         if (body) {
           body.classList.add('playing');
         }
 
-        // Set the sync system to playing state
         window.sync.isPlaying = true;
 
-        // Directly call updateVisualSync with the exact time
         if (typeof window.sync.updateVisualSync === 'function') {
           window.sync.updateVisualSync(time);
         } else {
           // Fallback: manually update highlights
           window.sync.clearAllHighlights();
-
           const visualTime = time + (window.sync.visualLeadTime || 0);
-
-          // Activate notes that should be highlighted at this time
+          
           if (window.sync.notes) {
             window.sync.notes.forEach(note => {
               if (note.startTime <= visualTime && note.endTime > visualTime) {
@@ -199,8 +194,7 @@ class SimpleBachCapture {
               }
             });
           }
-
-          // Update bar visibility
+          
           if (typeof window.sync.getCurrentBar === 'function') {
             const currentBar = window.sync.getCurrentBar(visualTime);
             if (typeof window.sync.showBar === 'function') {
@@ -209,56 +203,71 @@ class SimpleBachCapture {
           }
         }
 
-        // Log progress every 30 frames (1 second)
-        if (frameNum % 30 === 0) {
+        // Log progress every 60 frames (for 60fps)
+        if (frameNum % 60 === 0) {
           const visualTime = time + (window.sync.visualLeadTime || 0);
           const currentBar = window.sync.getCurrentBar ? window.sync.getCurrentBar(visualTime) : 'unknown';
           const activeNoteCount = window.sync.activeNotes?.length || 0;
           const totalNotes = window.sync.notes?.length || 0;
-          console.log(`⏱️ Frame ${frameNum}: ${relTime.toFixed(2)}s (${time.toFixed(2)}s absolute), Bar ${currentBar}, Active: ${activeNoteCount}/${totalNotes} notes`);
+          console.log(`⏱️ Frame ${frameNum}: ${relTime.toFixed(2)}s, Bar ${currentBar}, Active: ${activeNoteCount}/${totalNotes}`);
         }
-      } else {
-        console.log(`❌ No sync system found at frame ${frameNum}`);
       }
     }, absoluteTime, frameNumber, relativeTime);
 
-    // Give animations less time to settle for faster, smoother capture
-    await new Promise(resolve => setTimeout(resolve, 50)); // Reduced from 200ms
+    await new Promise(resolve => setTimeout(resolve, 50));
 
-    // Capture screenshot
     const frameFileName = `frame_${frameNumber.toString().padStart(6, '0')}.png`;
     const framePath = path.join(this.options.outputDir, frameFileName);
 
-    // Get SVG element position and capture just that area of the page
-    const svgInfo = await this.page.evaluate(() => {
+    // FAST APPROACH: Get SVG info and smart crop in one call
+    const cropInfo = await this.page.evaluate(() => {
       const svg = document.querySelector('#svg-container svg');
       if (!svg) return null;
 
-      const rect = svg.getBoundingClientRect();
+      const svgRect = svg.getBoundingClientRect();
+      
+      // Find currently visible/active bar for smart cropping
+      const visibleBar = document.querySelector('[data-bar][style*="visible"]') || 
+                         document.querySelector('[data-bar]'); // Fallback to any bar
+
+      let cropY = 0;
+      const cropHeight = 600; // Show ~4-5 lines of music
+
+      if (visibleBar) {
+        const barRect = visibleBar.getBoundingClientRect();
+        const relativeBarY = barRect.top - svgRect.top;
+        // Center the crop around the current bar
+        cropY = Math.max(0, Math.min(relativeBarY - 200, svgRect.height - cropHeight));
+      }
+
       return {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
+        svgX: svgRect.left,
+        svgY: svgRect.top,
+        svgWidth: svgRect.width,
+        svgHeight: svgRect.height,
+        cropX: svgRect.left,
+        cropY: svgRect.top + cropY,
+        cropWidth: svgRect.width,
+        cropHeight: Math.min(cropHeight, svgRect.height)
       };
     });
 
-    if (!svgInfo) {
+    if (!cropInfo) {
       throw new Error(`SVG element not found at frame ${frameNumber}`);
     }
 
-    // Capture just the SVG area from the full page
+    // Capture just the cropped section (much faster than full SVG)
     await this.page.screenshot({
       path: framePath,
       type: 'png',
       clip: {
-        x: svgInfo.x,
-        y: svgInfo.y,
-        width: svgInfo.width,
-        height: svgInfo.height
+        x: cropInfo.cropX,
+        y: cropInfo.cropY,
+        width: cropInfo.cropWidth,
+        height: cropInfo.cropHeight
       }
     });
-    
+
     return framePath;
   }
 
