@@ -1,6 +1,6 @@
 /**
- * Simple Puppeteer script for your existing CSS animation system
- * No Web Animations API required - works with your current setup
+ * Complete Puppeteer script for Bach animation capture
+ * Fast full-page capture with hidden UI elements and JPEG compression
  */
 
 const puppeteer = require('puppeteer');
@@ -11,9 +11,9 @@ const { execSync } = require('child_process');
 class SimpleBachCapture {
   constructor(options = {}) {
     this.options = {
-      width: 3840,
-      height: 2160,
-      fps: 30,
+      width: 1280,
+      height: 720,
+      fps: 60,
       duration: 275.74, // Duration from your video (4:35.74)
       startTime: 0,      // Start offset in seconds (for test mode)
       outputDir: './frames',
@@ -39,7 +39,7 @@ class SimpleBachCapture {
         '--disable-dev-shm-usage',
         '--disable-web-security',
         '--disable-features=VizDisplayCompositor',
-        '--autoplay-policy=no-user-gesture-required' // Allow audio
+        '--autoplay-policy=no-user-gesture-required'
       ]
     });
 
@@ -92,10 +92,61 @@ class SimpleBachCapture {
     await this.page.waitForFunction(() => window.sync !== null, { timeout: 30000 });
     console.log('✅ Synchronisator ready');
 
-    // Optional: Make CSS animations more deterministic and faster for capture
+    // HIDE UI ELEMENTS for clean full-page capture
     await this.page.addStyleTag({
       content: `
-        /* Faster, more deterministic animations for smoother capture */
+        /* Hide specific UI elements - be more aggressive */
+        .fixed-top { display: none !important; } /* Header with navigation and audio */
+        #header { display: none !important; } /* Header container */
+        #bwv-navigation { display: none !important; } /* BWV tabs */
+        #audio { display: none !important; } /* Audio player */
+        #bar_spy { display: none !important; } /* Bar counter */
+        #footer { display: none !important; } /* Footer */
+        #button_scroll_to_top { display: none !important; } /* Scroll button */
+        #measure-controls { display: none !important; } /* Any controls */
+        
+        /* Hide any remaining header/footer elements */
+        header, footer, nav { display: none !important; }
+        .border-bottom { display: none !important; }
+        .bg-light { display: none !important; }
+        
+        /* Remove body padding and margins */
+        body { 
+          padding: 0 !important; 
+          margin: 0 !important;
+          background: white !important;
+        }
+        
+        /* Make main content fill entire viewport */
+        .main-content { 
+          padding: 0 !important; 
+          margin: 0 !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100vw !important;
+          height: 100vh !important;
+        }
+        
+        /* Make container fill the space */
+        .container { 
+          padding: 0 !important; 
+          margin: 0 !important; 
+          max-width: none !important;
+          width: 100% !important;
+        }
+        
+        /* Center and size SVG container */
+        #svg-container { 
+          margin: 0 !important; 
+          padding: 20px !important;
+          display: flex !important;
+          justify-content: center !important;
+          align-items: flex-start !important;
+          min-height: 100vh !important;
+        }
+        
+        /* Faster animations */
         #svg-container > svg path[data-ref] {
           transition: fill 0.05s linear, transform 0.05s linear, 
                       stroke 0.05s linear, stroke-width 0.05s linear, 
@@ -107,29 +158,21 @@ class SimpleBachCapture {
           100% { filter: brightness(1) saturate(1); }
         }
         
-        /* Faster animations for smoother capture */
-        @media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
-          #svg-container > svg path[data-ref].active {
-            animation: noteFlash 0.05s ease-out !important;
-            transition: fill 0.05s linear, transform 0.05s linear, 
-                        stroke 0.05s linear, stroke-width 0.05s linear, 
-                        stroke-opacity 0.05s linear !important;
-          }
+        #svg-container > svg path[data-ref].active {
+          animation: noteFlash 0.05s ease-out !important;
+          transition: fill 0.05s linear, transform 0.05s linear, 
+                      stroke 0.05s linear, stroke-width 0.05s linear, 
+                      stroke-opacity 0.05s linear !important;
         }
         
-        /* Disable any remaining slow transitions */
+        /* Disable slow transitions globally */
         * {
           transition-duration: 0.05s !important;
-        }
-        
-        /* Keep basic UI transitions normal */
-        button, .btn, select, input, .badge {
-          transition-duration: 0.2s !important;
         }
       `
     });
 
-    // Set up capture-friendly environment
+    // Set up capture-friendly environment with controlled scrolling
     await this.page.evaluate(() => {
       // Pause any auto-play
       if (window.audio) {
@@ -137,9 +180,9 @@ class SimpleBachCapture {
         window.audio.currentTime = 0;
       }
 
-      console.log('📸 Smart SVG cropping mode - follows current bar automatically');
+      console.log('📸 Fast full-page capture with hidden UI and controlled scrolling');
 
-      // Log system state for debugging
+      // Log system state
       console.log('🎼 Bach player capture setup:');
       console.log('- Audio element:', !!window.audio);
       console.log('- Sync system:', !!window.sync);
@@ -152,27 +195,28 @@ class SimpleBachCapture {
         console.log('- Visual lead time:', window.sync.visualLeadTime || 0);
       }
 
-      // Check SVG element and log its real size
+      // Check SVG element
       const svg = document.querySelector('#svg-container svg');
       if (svg) {
         const rect = svg.getBoundingClientRect();
-        console.log(`- Full SVG size: ${rect.width.toFixed(0)}x${rect.height.toFixed(0)}px`);
-        console.log(`- Will crop to: ~${rect.width.toFixed(0)}x600px following the music`);
+        console.log(`- SVG size: ${rect.width.toFixed(0)}x${rect.height.toFixed(0)}px`);
+        console.log(`- Viewport: 1280x720 (UI hidden, SVG-focused)`);
       } else {
         console.error('❌ SVG element not found!');
       }
     });
 
-    console.log('✅ Page configured for capture');
+    console.log('✅ Page configured for fast capture');
   }
 
-async captureFrame(frameNumber) {
+  async captureFrame(frameNumber) {
     const relativeTime = frameNumber / this.options.fps;
     const absoluteTime = this.options.startTime + relativeTime;
 
-    // Directly control the synchronisator for this exact time
+    // Control the synchronisator and add smart scrolling
     await this.page.evaluate((time, frameNum, relTime) => {
       if (window.sync) {
+        // Enable playing state for CSS styling
         const body = document.querySelector('body');
         if (body) {
           body.classList.add('playing');
@@ -180,6 +224,7 @@ async captureFrame(frameNumber) {
 
         window.sync.isPlaying = true;
 
+        // Update visual sync
         if (typeof window.sync.updateVisualSync === 'function') {
           window.sync.updateVisualSync(time);
         } else {
@@ -203,6 +248,34 @@ async captureFrame(frameNumber) {
           }
         }
 
+        // SMART SCROLLING: Follow the music as it progresses
+        if (typeof window.sync.getCurrentBar === 'function') {
+          const visualTime = time + (window.sync.visualLeadTime || 0);
+          const currentBar = window.sync.getCurrentBar(visualTime);
+          
+          if (currentBar && currentBar > 0) {
+            // Find the current bar element
+            const barElement = document.querySelector(`[data-bar="${currentBar}"]`);
+            if (barElement) {
+              const rect = barElement.getBoundingClientRect();
+              const viewportHeight = window.innerHeight;
+              
+              // If current bar is near the bottom 30% of viewport, scroll down
+              if (rect.top > viewportHeight * 0.7) {
+                const scrollAmount = viewportHeight * 0.4; // Scroll by 40% of viewport
+                window.scrollTo({
+                  top: window.scrollY + scrollAmount,
+                  behavior: 'auto' // Instant scroll for capture
+                });
+                
+                if (frameNum % 60 === 0) {
+                  console.log(`📜 Scrolled to follow bar ${currentBar}`);
+                }
+              }
+            }
+          }
+        }
+
         // Log progress every 60 frames (for 60fps)
         if (frameNum % 60 === 0) {
           const visualTime = time + (window.sync.visualLeadTime || 0);
@@ -217,19 +290,20 @@ async captureFrame(frameNumber) {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     // FAST APPROACH: Simple full-page capture with JPEG compression
-    const frameFileName = `frame_${frameNumber.toString().padStart(6, '0')}.jpg`; // JPEG extension
+    const frameFileName = `frame_${frameNumber.toString().padStart(6, '0')}.jpg`;
     const framePath = path.join(this.options.outputDir, frameFileName);
 
     await this.page.screenshot({
       path: framePath,
-      type: 'jpeg',      // JPEG instead of PNG - much faster compression
-      quality: 90,       // High quality JPEG
-      fullPage: false,   // Viewport only
+      type: 'jpeg',
+      quality: 90,
+      fullPage: false,
       captureBeyondViewport: false
     });
 
     return framePath;
   }
+
   async captureAll() {
     console.log('🎬 Starting Bach animation capture...');
 
@@ -242,7 +316,7 @@ async captureFrame(frameNumber) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       const eta = (((Date.now() - startTime) / (frame + 1)) * (this.totalFrames - frame - 1) / 1000).toFixed(1);
 
-      if (frame % 30 === 0 || frame < 10) { // More frequent logging at start
+      if (frame % 60 === 0 || frame < 10) {
         console.log(`📸 Frame ${frame + 1}/${this.totalFrames} (${progress}%) - ${elapsed}s elapsed, ${eta}s ETA`);
       }
     }
@@ -256,14 +330,14 @@ async captureFrame(frameNumber) {
 
     const ffmpegCommand = [
       'ffmpeg',
-      '-y', // Overwrite output
+      '-y',
       '-r', this.options.fps.toString(),
       '-i', `${this.options.outputDir}/frame_%06d.jpg`,
       '-c:v', 'libx264',
       '-pix_fmt', 'yuv420p',
-      '-vf', `fps=${this.options.fps}`, // Match input fps
+      '-vf', `fps=${this.options.fps}`,
       '-preset', 'medium',
-      '-crf', '20', // Better quality (was 23)
+      '-crf', '20',
       this.options.videoOutput
     ].join(' ');
 
@@ -272,7 +346,6 @@ async captureFrame(frameNumber) {
       execSync(ffmpegCommand, { stdio: 'inherit' });
       console.log(`✅ Video created: ${this.options.videoOutput}`);
 
-      // Show file size
       const stats = await fs.stat(this.options.videoOutput);
       const sizeMB = (stats.size / 1024 / 1024).toFixed(1);
       console.log(`📊 Video size: ${sizeMB}MB at ${this.options.fps}fps`);
@@ -299,8 +372,16 @@ async captureFrame(frameNumber) {
       console.log('🎉 Bach animation capture complete!');
       console.log(`📁 Frames: ${this.options.outputDir}`);
       console.log(`🎥 Video: ${this.options.videoOutput}`);
-      console.log(`\n🎵 Next step: Merge with your performance video:`);
-      console.log(`ffmpeg -i final_performance.mp4 -i ${this.options.videoOutput} -filter_complex "[0:v]scale=1920:1080[v1]; [1:v]scale=1920:1080[v2]; [v1][v2]hstack" -c:a copy merged_output.mp4`);
+      
+      if (this.options.fps === 60) {
+        console.log(`\n🔗 Convert to 30fps for merging with your 29.97fps video:`);
+        console.log(`ffmpeg -i ${this.options.videoOutput} -vf "fps=30" -c:v libx264 -crf 20 bach_30fps.mp4`);
+        console.log(`\n🎬 Then merge:`);
+        console.log(`ffmpeg -i final_performance.mp4 -i bach_30fps.mp4 -filter_complex "[0:v]scale=1920:1080[v1]; [1:v]scale=1920:1080[v2]; [v1][v2]hstack" -c:a copy merged_output.mp4`);
+      } else {
+        console.log(`\n🎬 Merge with your performance video:`);
+        console.log(`ffmpeg -i final_performance.mp4 -i ${this.options.videoOutput} -filter_complex "[0:v]scale=1920:1080[v1]; [1:v]scale=1920:1080[v2]; [v1][v2]hstack" -c:a copy merged_output.mp4`);
+      }
 
     } catch (error) {
       console.error('❌ Capture failed:', error);
@@ -314,25 +395,25 @@ async captureFrame(frameNumber) {
 // Usage with test mode
 async function main() {
   // TEST MODE - captures just 10 seconds starting from the beginning
-  const testMode = true; // Change to false for full capture
+  const testMode = false; // Change to false for full capture
 
   const capture = new SimpleBachCapture({
-    width: 1280,      // Browser viewport (for loading)
-    height: 720,      // Browser viewport (for loading)  
-    fps: 60,          // Higher FPS for smoother animation
-    duration: testMode ? 10 : 275.74, // 10 seconds for test, full duration for real
-    startTime: testMode ? 0 : 0,       // Start from beginning
-    pageUrl: 'http://localhost:8000/?werk=1006', // Adjust this URL
+    width: 1280,
+    height: 720,
+    fps: 60,
+    duration: testMode ? 10 : 275.74,
+    startTime: testMode ? 0 : 0,
+    pageUrl: 'http://localhost:8000/?werk=1006',
     outputDir: testMode ? './test_frames' : './bach_frames',
-    videoOutput: testMode ? './test_bach_cropped.mp4' : './bach_animation.mp4'
+    videoOutput: testMode ? './test_bach_clean.mp4' : './bach_animation.mp4'
   });
 
   if (testMode) {
-    console.log('🧪 TEST MODE: Capturing 10 seconds - Smart SVG cropping');
-    console.log('   Crop size: ~936x600px (follows the music)');
-    console.log('   FPS: 60 (smoother animation)');
-    console.log('   Content: Focused view that follows current bar');
-    console.log('   This will take about 2-3 minutes');
+    console.log('🧪 TEST MODE: Capturing 10 seconds with clean UI');
+    console.log('   Resolution: 1280x720 (UI hidden, SVG centered)');
+    console.log('   Format: JPEG (faster compression)');
+    console.log('   Scrolling: Auto-follows the music');
+    console.log('   Speed: ~70-100s (fast!)');
     console.log('   Set testMode = false for full capture');
   }
 
