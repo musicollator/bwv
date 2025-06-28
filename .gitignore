@@ -2,3 +2,6 @@
 test/exports
 bwvs.json
 ___*/
+test_frames/
+bach_frames/
+*.mp4
