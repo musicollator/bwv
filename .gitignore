@@ -4,4 +4,7 @@ bwvs.json
 ___*/
 test_frames/
 bach_frames/
+test_frames_overlay/
+bach_frames_overlay/
+old_vids/
 *.mp4
