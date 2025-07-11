@@ -22,7 +22,7 @@ function processWerkParameter() {
     return defaultWorkId;
   }
 
-  const werkPattern = /^(?:\d+|test[^\d\s]*)$/;
+  const werkPattern = /^(?:\d+|test[^\d\s]*|Kitty[^\d\s]*)$/;
 
   if (!werkPattern.test(werkParam)) {
     console.warn(`Invalid werk parameter: "${werkParam}". Using default: ${defaultWorkId}`);
@@ -37,6 +37,10 @@ function processWerkParameter() {
     return werkParam;
   }
 
+  if (/^Kitty[^\d\s]*$/.test(werkParam)) {
+    return werkParam;
+  } 
+  
   return defaultWorkId;
 }
 
