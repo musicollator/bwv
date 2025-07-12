@@ -1,0 +1,84 @@
+# Convert CAL_0591 (720p → 1080p, keep 24fps, convert audio)
+ffmpeg -i CAL_0591.MOV -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080" -r 24000/1001 -c:v libx264 -preset medium -crf 18 -c:a aac -b:a 192k -ar 48000 CAL_0591_converted.mp4
+
+# Convert DSCF1344 (4K → 1080p, 30fps → 24fps, convert audio)
+ffmpeg -i DSCF1344.MOV -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080" -r 24000/1001 -c:v libx264 -preset medium -crf 18 -c:a aac -b:a 192k -ar 48000 DSCF1344_converted.mp4
+
+
+ffmpeg -i DSCF1344.MOV -filter_complex "[0:v]split[v1][v2];[0:a]asplit[a1][a2];[v1][a1]concat=n=1:v=1:a=1,trim=end=170.859[out1];[v2][a2]concat=n=1:v=1:a=1,trim=start=171.410[out2];[out1][out2]concat=n=2:v=1:a=1" -c:v libx264 -c:a aac final_performance.mp4
+
+ffmpeg -i DSCF1344_edited.mp4 -i TASCAM_0122_fixed_mastered_cropped.mp3 \
+  -filter_complex "[1:a]adelay=delays=2137|2137[delayed_audio]" \
+  -map "0:v" -map "[delayed_audio]" \
+  -c:v copy -c:a aac -shortest final_performance.mp4
+
+  ffmpeg -i final_performance.mp4 -vf "scale=1920:1080" -c:v libx264 -preset medium -crf 23 -c:a aac -b:a 128k -movflags +faststart facebook_performance.mp4
+
+ffmpeg -i ~/Bach1006/20520625/12h50/final_performance.mp4 -t 20 -c copy performance_20s.mp4
+
+
+ffmpeg -i ~/Bach1006/20520625/12h50/final_performance.mp4 -i bach_delayed.mp4 \
+  -filter_complex "[0:v]scale=1920:1080[v1]; [1:v]scale=1920:1080[v2]; [v1][v2]hstack" \
+  -c:a copy test_merged_perfect.mp4
+
+ffmpeg -i ~/Bach1006/20520625/12h50/final_performance.mp4 -i bach_overlay_30fps.mp4 \
+  -filter_complex "[1:v]scale=1920:300,format=yuva420p,colorchannelmixer=aa=0.8[score]; [0:v][score]overlay=0:H-h-20" \
+  -t 13 -c:a copy performance_with_score.mp4
+
+ffmpeg -i bach_overlay_30fps.mp4 \
+  -filter_complex "[0:v]tpad=start_duration=2.132:start_mode=clone[padded]" \
+  -map "[padded]" -c:v libx264 -crf 20 bach_overlay_delayed.mp4
+
+# Center overlay with 2/3 opacity:
+ffmpeg -i ~/Bach1006/20520625/12h50/final_performance.mp4 -i bach_overlay_delayed.mp4 \
+  -filter_complex "[1:v]format=yuva420p,colorchannelmixer=aa=0.667[score]; [0:v][score]overlay=0:(H-h)/2" \
+  -c:a copy performance_with_score_center.mp4
+
+ffmpeg -i ~/Bach1006/20520625/12h50/final_performance.mp4 -i bach_overlay_30fps.mp4 \
+  -filter_complex "[1:v]scale=3840:540,tpad=start_duration=2.132:start_mode=clone,format=yuva420p,colorchannelmixer=aa=0.667[score]; [0:v][score]overlay=0:(H-h)/2" \
+  -c:a copy performance_with_score_center.mp4
+
+  ffprobe ~/Bach1006/20520625/12h50/final_performance.mp4 1> final_performance.ffprobe 2>&1
+  ffprobe test_bach_overlay.mp4 1> test_bach_overlay.ffprobe 2>&1
+
+  ffmpeg -i performance_20s.mp4 -i test_bach_overlay.mp4 \
+  -filter_complex "[1:v]scale=3840:300,tpad=start_duration=2.132:start_mode=clone,format=yuva420p,colorchannelmixer=aa=0.667[score]; [0:v][score]overlay=0:(H-h)/2" \
+  -c:a copy performance_with_score_center.mp4
+
+ffmpeg -i ~/Bach1006/20520625/12h50/final_performance.mp4 -i bach_overlay.mp4 \
+  -filter_complex "[1:v]scale=3840:300,tpad=start_duration=2.132:start_mode=clone,format=yuva420p,colorchannelmixer=aa=0.667[score]; [0:v][score]overlay=0:H-h-80" \
+  -c:a copy performance_with_score_bottom.mp4
+
+ffmpeg -f lavfi -i color=black:size=3840x2160:duration=5:rate=30 \
+  -vf "drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='JS Bach BWV 1006':fontsize=180:fontcolor=white:x=(w-text_w)/2:y=h/3,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='with borrowings from BWV 29':fontsize=90:fontcolor=#CCCCCC:x=(w-text_w)/2:y=h/3+220,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='Christophe Thiebaud':fontsize=120:fontcolor=white:x=(w-text_w)/2:y=h/2+100,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='June 25, 2025':fontsize=90:fontcolor=white:x=(w-text_w)/2:y=h*2/3+100" \
+  -c:v libx264 -pix_fmt yuv420p intro.mp4  
+
+ffmpeg -i credits_raw.mp4 \
+  -vf "drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='JS Bach BWV 1006':fontsize=120:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+100-108*t\,h-1736):shadowcolor=black:shadowx=3:shadowy=3,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='with borrowings from BWV 29':fontsize=80:fontcolor=#CCCCCC:x=(w-text_w)/2:y=if(lt(t\,17)\,h+200-108*t\,h-1636):shadowcolor=black:shadowx=2:shadowy=2,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='Performed by Christophe Thiebaud':fontsize=100:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+350-108*t\,h-1486):shadowcolor=black:shadowx=3:shadowy=3,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='Recorded June 25, 2025 - Ravenna, Italy':fontsize=90:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+500-108*t\,h-1336):shadowcolor=black:shadowx=2:shadowy=2,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='Cinematography\: Paolo':fontsize=90:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+700-108*t\,h-1136):shadowcolor=black:shadowx=2:shadowy=2,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='2018 Fender Limited Edition Made In Japan Super Deluxe Thinline Telecaster':fontsize=80:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+900-108*t\,h-936):shadowcolor=black:shadowx=2:shadowy=2,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='1974 Fender Twin Reverb':fontsize=80:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+1000-108*t\,h-836):shadowcolor=black:shadowx=2:shadowy=2,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='Special Thanks Luisa and Paolo':fontsize=90:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+1200-108*t\,h-636):shadowcolor=black:shadowx=2:shadowy=2,
+       drawtext=fontfile=/System/Library/Fonts/Helvetica.ttc:text='bwv.cthiebaud.com':fontsize=90:fontcolor=white:x=(w-text_w)/2:y=if(lt(t\,17)\,h+1400-108*t\,h-436):shadowcolor=black:shadowx=2:shadowy=2,
+       fade=t=out:st=22:d=6.46:color=black" \
+  -af "afade=t=out:st=22:d=6.46" \
+  -c:v libx264 -c:a aac credits.mp4
+
+
+  ffmpeg -i intro.mp4 -i ~/Bach1006/20520625/cigales.wav -i performance_with_score_bottom.mp4 -i credits.mp4 \
+  -filter_complex "
+    [1:a]atrim=0:5,asetpts=PTS-STARTPTS[cigales_intro];
+    [1:a]atrim=5:7.132,asetpts=PTS-STARTPTS[cigales_performance];
+    [2:a]atrim=0:2.132,asetpts=PTS-STARTPTS[perf_audio_start];
+    [2:a]atrim=2.132,asetpts=PTS-STARTPTS[perf_audio_rest];
+    [cigales_performance][perf_audio_start]amix=inputs=2:duration=shortest[mixed_start];
+    [mixed_start][perf_audio_rest]concat=n=2:v=0:a=1[perf_audio_final];
+    [0:v][cigales_intro][2:v][perf_audio_final][3:v][3:a]concat=n=3:v=1:a=1[outv][outa]
+  " \
+  -map "[outv]" -map "[outa]" -c:v libx264 -c:a aac final_bach_movie.mp4
