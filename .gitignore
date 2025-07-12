@@ -8,3 +8,5 @@ test_frames_overlay/
 bach_frames_overlay/
 old_vids/
 *.mp4
+test/
+Kitty/

@@ -21,27 +21,27 @@
 
   /* 🎵 Voice Color System - Single Source of Truth */
   --voice-0-color: coral;
-  --voice-0-color-dark: #c63500; /* coral → orangered */
+  --voice-0-color-dark: color-mix(in srgb, var(--voice-0-color) 80%, black 20%); /* #c63500; coral → orangered */
   --voice-0-name: "SOPRANO";
 
   --voice-1-color: lightgreen;
-  --voice-1-color-dark: darkgreen; /* lightgreen → darkgreen */
+  --voice-1-color-dark: color-mix(in srgb, var(--voice-1-color) 80%, black 20%); /* darkgreen; /* lightgreen → darkgreen */
   --voice-1-name: "BASS";
 
   --voice-2-color: dodgerblue;
-  --voice-2-color-dark: navy; /* dodgerblue → navy */
+  --voice-2-color-dark: color-mix(in srgb, var(--voice-2-color) 80%, black 20%); /* navy; /* dodgerblue → navy */
   --voice-2-name: "ALTO";
 
   --voice-3-color: gold;
-  --voice-3-color-dark: #766300; /* gold → saddlebrown */
+  --voice-3-color-dark: color-mix(in srgb, var(--voice-3-color) 80%, black 20%); /* #766300; /* gold → saddlebrown */
   --voice-3-name: "TENOR";
 
   --voice-4-color: darkred;
-  --voice-4-color-dark: #500000; /* darkred → very dark red */
+  --voice-4-color-dark: color-mix(in srgb, var(--voice-4-color) 80%, black 20%); /* #500000; /* darkred → very dark red */
   --voice-4-name: "VOICE5";
 
   --voice-5-color: orchid;
-  --voice-5-color-dark: indigo; /* orchid → indigo */
+  --voice-5-color-dark: color-mix(in srgb, var(--voice-5-color) 80%, black 20%); /* indigo; /* orchid → indigo */
   --voice-5-name: "VOICE6";
 }
 
@@ -107,12 +107,13 @@ body {
 @media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
   @keyframes noteFlash {
     0% {
-      filter: brightness(5) saturate(0);
+      filter: brightness(4) saturate(0);
     }
     100% {
       filter: brightness(1);
     }
   }
+
 
   #svg-container > svg path[data-ref] {
     transition: fill 1.5s ease, filter 1.5s ease, transform 1.5s ease,
@@ -131,9 +132,8 @@ body {
     transform: scale(1.125);
     transform-box: fill-box;
     transform-origin: center;
-    stroke-width: 0.125;
-    stroke-opacity: 0.667;
-    animation: noteFlash 0.2s ease-out;
+    stroke-width: 0.2;
+    stroke-opacity: .5;
   }
 }
 

@@ -16,9 +16,9 @@ class EnhancedBachCapture {
       fps: 30,
       duration: 275.74,
       startTime: 0,
-      outputDir: './frames',
-      videoOutput: './bach_animation.mp4',
-      pageUrl: 'http://localhost:8000/?werk=1006',
+      outputDir: './frames2',
+      videoOutput: './Kitty_animation.mp4',
+      pageUrl: 'http://localhost:8000/?werk=Kitty',
       deviceScaleFactor: 2,    // Higher scale factor for crisp 4K rendering
       ...options
     };
@@ -44,6 +44,11 @@ class EnhancedBachCapture {
     });
 
     this.page = await this.browser.newPage();
+    
+    // Listen to console messages from the browser
+    this.page.on('console', (msg) => {
+      console.log('🖥️ Browser:', msg.text());
+    });
 
     await this.page.setViewport({
       width: this.options.width,
@@ -91,6 +96,7 @@ class EnhancedBachCapture {
     // Wait for synchronisator to be ready
     await this.page.waitForFunction(() => window.sync !== null, { timeout: 30000 });
     console.log('✅ Synchronisator ready');
+
 
     // HIDE UI ELEMENTS and DISABLE CSS ANIMATIONS
     await this.page.addStyleTag({
@@ -175,6 +181,12 @@ class EnhancedBachCapture {
       `
     });
 
+    // Inject channel2colour.js functions into the page via script tag
+    await this.page.addScriptTag({
+      path: './js/channel2colour.js',
+      type: 'module'
+    });
+
     // Initialize Web Animations API system
     await this.page.evaluate(() => {
       // Create animation manager
@@ -192,17 +204,45 @@ class EnhancedBachCapture {
           strokeOpacity: 0.667    // Active stroke opacity
         },
 
-        // Get channel colors (return color names for interpolation)
+        // Channel color mapping (will be set after sync data is loaded)
+        channelColorMap: null,
+        
+        // Get channel colors using intelligent mapping
         getChannelColors: (channel) => {
-          const colors = {
-            0: { fill: 'coral', stroke: 'coral' },
-            1: { fill: 'lightgreen', stroke: 'lightgreen' },
-            2: { fill: 'dodgerblue', stroke: 'dodgerblue' },
-            3: { fill: 'gold', stroke: 'gold' },
-            4: { fill: 'darkred', stroke: 'darkred' },
-            5: { fill: 'orchid', stroke: 'orchid' }
-          };
-          return colors[channel] || colors[0];
+          if (!window.animationManager.channelColorMap) {
+            throw new Error(`Channel color mapping not initialized! Cannot get colors for channel ${channel}`);
+          }
+          
+          // Use intelligent mapping
+          const colorIndex = window.animationManager.channelColorMap.get(channel);
+          if (colorIndex === undefined) {
+            throw new Error(`Channel ${channel} not found in color mapping! Available channels: ${Array.from(window.animationManager.channelColorMap.keys())}`);
+          }
+          
+          const colorInfo = window.animationManager.getColorFromIndex(colorIndex);
+          if (!colorInfo) {
+            throw new Error(`No color info found for color index ${colorIndex}`);
+          }
+          
+          // Debug logging
+          // console.log(`🎨 Channel ${channel} → Color Index ${colorIndex} → ${colorInfo.colorName} (${colorInfo.voice})`);
+          
+          return { fill: colorInfo.colorName, stroke: colorInfo.colorName };
+        },
+        
+        // Get color from CSS using color index
+        getColorFromIndex: (colorIndex) => {
+          // Use the actual CSS color function if available
+          if (!window.getActualCSSColor) {
+            throw new Error('getActualCSSColor function not available! Channel color mapping failed to initialize.');
+          }
+          
+          const colorInfo = window.getActualCSSColor(colorIndex);
+          if (!colorInfo) {
+            throw new Error(`No color information found for color index ${colorIndex}`);
+          }
+          
+          return colorInfo;
         },
 
         // Update all animations to specific time
@@ -280,6 +320,20 @@ class EnhancedBachCapture {
         interpolateColor: function (color1, color2, progress) {
           // Convert color names to RGB values
           const getColorRGB = (colorName) => {
+            // Try to get actual computed color from CSS
+            const tempEl = document.createElement('div');
+            tempEl.style.color = colorName;
+            document.body.appendChild(tempEl);
+            const computedColor = getComputedStyle(tempEl).color;
+            document.body.removeChild(tempEl);
+            
+            // Parse RGB values from computed color
+            const match = computedColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (match) {
+              return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
+            }
+            
+            // Fallback to hardcoded values
             const colorMap = {
               'coral': [255, 127, 80],
               'lightgreen': [144, 238, 144],
@@ -322,6 +376,61 @@ class EnhancedBachCapture {
       };
 
       console.log('🎭 Web Animations API manager initialized');
+    });
+
+    // Initialize intelligent channel color mapping
+    await this.page.evaluate(async () => {
+      if (window.sync && window.sync.syncData && window.sync.syncData.meta && window.sync.syncData.meta.channels) {
+        // console.log('🔍 Checking sync data structure...');
+        // console.log('  Total notes:', window.sync.notes.length);
+        // console.log('  Channel metadata:', JSON.stringify(window.sync.syncData.meta.channels, null, 2));
+        
+        // Extract note data for intelligent mapping using the same method as synchronisator
+        const channelData = [];
+        
+        for (const [channelStr, stats] of Object.entries(window.sync.syncData.meta.channels)) {
+          const channel = parseInt(channelStr);
+          
+          // Create mock note data with pitch info distributed across the range
+          for (let i = 0; i < stats.count; i++) {
+            channelData.push({
+              channel: channel,
+              pitch: stats.minPitch + (i / stats.count) * (stats.maxPitch - stats.minPitch)
+            });
+          }
+        }
+
+        // console.log('  Processed channel data sample:', JSON.stringify(channelData.slice(0, 10), null, 2));
+        
+        // Import functions from the module
+        try {
+          const { createChannelColorMapping, logChannelMapping, getActualCSSColor } = await import('./js/channel2colour.js');
+          
+          // console.log('✅ Successfully imported channel2colour functions');
+          
+          // Create intelligent channel color mapping
+          window.animationManager.channelColorMap = createChannelColorMapping(channelData);
+          
+          // Store the functions on window for later use
+          window.createChannelColorMapping = createChannelColorMapping;
+          window.logChannelMapping = logChannelMapping;
+          window.getActualCSSColor = getActualCSSColor;
+          
+          // Debug: Log the mapping details
+          // console.log('🎨 Channel Color Mapping Created:');
+          // console.log('  Total channel data points:', channelData.length);
+          // console.log('  Channel mapping:', JSON.stringify(Array.from(window.animationManager.channelColorMap.entries())));
+          
+          // Log the mapping for debugging
+          // logChannelMapping(window.animationManager.channelColorMap, channelData);
+          
+          console.log('🎨 Intelligent channel color mapping initialized');
+        } catch (error) {
+          console.error('❌ Failed to import channel2colour functions:', error);
+        }
+      } else {
+        console.error('❌ No sync data available for color mapping');
+      }
     });
 
     // Set up capture environment
@@ -565,14 +674,14 @@ async function main() {
   const testMode = false; // Change to false for full capture
 
   const capture = new EnhancedBachCapture({
-    width: 3840,
-    height: 300,        // 4K width, 1/6th height for perfect overlay match
+    width: 1920,
+    height: 340,        // 4K width, 1/6th height for perfect overlay match
     fps: 30,
-    duration: testMode ? 20 : 275.74,
-    startTime: testMode ? 0 : 0,
-    pageUrl: 'http://localhost:8000/?werk=1006',
+    duration: testMode ? 5 : 43,
+    startTime: testMode ? 27 : 0,
+    pageUrl: 'http://localhost:8000/?werk=Kitty',
     outputDir: testMode ? './test_frames_overlay' : './bach_frames_overlay',
-    videoOutput: testMode ? './test_bach_overlay.mp4' : './bach_overlay.mp4'
+    videoOutput: testMode ? './test_kitty_overlay.mp4' : './kitty_overlay.mp4'
   });
 
   if (testMode) {

@@ -48,7 +48,7 @@ export function getColorPalette() {
 }
 
 /**
- * Create intelligent channel to color mapping based on pitch ranges
+ * Create intelligent channel to color mapping based on highest pitch in each channel
  * @param {Array} noteData - Raw note data with channel and pitch info
  * @returns {Map} channelColorMap - MIDI channel → color index mapping
  */
@@ -70,40 +70,41 @@ export function createChannelColorMapping(noteData) {
     stats.pitchRange.max = Math.max(stats.pitchRange.max, note.pitch);
   });
 
-  // Convert to array and calculate average pitch for each channel
-  const channelsWithAvgPitch = Array.from(channelStats.entries()).map(([channel, stats]) => ({
+  // Convert to array and use highest pitch for each channel
+  const channelsWithHighestPitch = Array.from(channelStats.entries()).map(([channel, stats]) => ({
     channel,
     stats,
-    avgPitch: (stats.pitchRange.min + stats.pitchRange.max) / 2,
+    maxPitch: stats.pitchRange.max,
+    avgPitch: (stats.pitchRange.min + stats.pitchRange.max) / 2, // Keep for logging
     pitchRange: stats.pitchRange.max - stats.pitchRange.min
   }));
 
-  // Sort channels by average pitch (highest to lowest)
-  channelsWithAvgPitch.sort((a, b) => b.avgPitch - a.avgPitch);
+  // Sort channels by highest pitch (highest to lowest)
+  channelsWithHighestPitch.sort((a, b) => b.maxPitch - a.maxPitch);
 
   // Create the mapping
   const channelColorMap = new Map();
   const voiceColors = getVoiceColors();
   
-  if (channelsWithAvgPitch.length === 0) {
+  if (channelsWithHighestPitch.length === 0) {
     return channelColorMap; // Empty mapping for no channels
   }
   
-  if (channelsWithAvgPitch.length === 1) {
+  if (channelsWithHighestPitch.length === 1) {
     // Single channel → first voice (soprano)
-    channelColorMap.set(channelsWithAvgPitch[0].channel, 0);
+    channelColorMap.set(channelsWithHighestPitch[0].channel, 0);
   } else {
     // Multiple channels: highest → first voice, lowest → second voice, others → remaining
-    const highestChannel = channelsWithAvgPitch[0];           // Highest pitch
-    const lowestChannel = channelsWithAvgPitch[channelsWithAvgPitch.length - 1]; // Lowest pitch
+    const highestChannel = channelsWithHighestPitch[0];           // Highest pitch
+    const lowestChannel = channelsWithHighestPitch[channelsWithHighestPitch.length - 1]; // Lowest pitch
     
     channelColorMap.set(highestChannel.channel, 0); // First voice (soprano)
     channelColorMap.set(lowestChannel.channel, 1);  // Second voice (bass)
     
     // Map remaining channels to voices 2, 3, 4, 5...
     let colorIndex = 2;
-    for (let i = 1; i < channelsWithAvgPitch.length - 1; i++) {
-      const channel = channelsWithAvgPitch[i].channel;
+    for (let i = 1; i < channelsWithHighestPitch.length - 1; i++) {
+      const channel = channelsWithHighestPitch[i].channel;
       channelColorMap.set(channel, Math.min(colorIndex, voiceColors.length - 1));
       colorIndex++;
     }
@@ -196,7 +197,7 @@ export function logChannelMapping(channelColorMap, noteData) {
     const stats = channelStats.get(channel);
     const { colorName, voice, actualColor } = getActualCSSColor(colorIndex);
     const avgPitch = ((stats.pitchRange.min + stats.pitchRange.max) / 2).toFixed(1);
-    const pitchInfo = `pitch ${stats.pitchRange.min}-${stats.pitchRange.max} (avg: ${avgPitch})`;
+    const pitchInfo = `pitch ${stats.pitchRange.min}-${stats.pitchRange.max} (max: ${stats.pitchRange.max}, avg: ${avgPitch})`;
     
     // console.log(`  Channel ${channel} → %c${colorName} ${actualColor}%c: ${stats.count} notes (${pitchInfo}) [${voice}]`, 
     //             `color: ${colorName}; font-weight: bold;`, 
