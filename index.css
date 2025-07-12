@@ -107,17 +107,16 @@ body {
 @media (min-width: 1025px) and (hover: hover) and (pointer: fine) {
   @keyframes noteFlash {
     0% {
-      filter: brightness(4) saturate(0);
+      filter: brightness(3);
     }
     100% {
       filter: brightness(1);
     }
   }
 
-
   #svg-container > svg path[data-ref] {
-    transition: fill 1.5s ease, filter 1.5s ease, transform 1.5s ease,
-      stroke 1.5s ease, stroke-width 1.5s ease, stroke-opacity 1.5s ease;
+    transition: fill 2s ease, filter 2s ease, transform 2s ease,
+      stroke 2s ease, stroke-width 2s ease, stroke-opacity 2s ease;
     transform: scale(1);
     transform-box: fill-box;
     transform-origin: center;
@@ -127,13 +126,14 @@ body {
 
   #svg-container > svg path[data-ref].active {
     transition: fill 0.15s linear, filter 0.15s linear, transform 0.15s linear,
-      stroke 0.15s linear, stroke-width 0.15s linear,
+      stroke 0s linear, stroke-width 0s linear,
       stroke-opacity 0.15s linear;
-    transform: scale(1.125);
+    transform: scale(1.15);
     transform-box: fill-box;
     transform-origin: center;
-    stroke-width: 0.2;
-    stroke-opacity: .5;
+    stroke-width: 1.5;
+    stroke-opacity: 0.25;
+    animation: noteFlash 0.25s linear !important;
   }
 }
 
